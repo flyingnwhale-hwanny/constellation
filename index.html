@@ -85,6 +85,13 @@
             <p>망원경을 움직이며 광활한 밤하늘에 꼭꼭 숨은 별자리를 찾아보세요!</p>
             <span class="card-action">게임 시작 →</span>
           </div>
+          <!-- Card 5: Board Game -->
+          <div class="lobby-card card-goto-marble" id="card-goto-marble">
+            <div class="card-icon">🎲</div>
+            <h3>별자리 부루마블</h3>
+            <p>친구들과 같은 화면에서 주사위를 굴리고 별자리를 퀴즈로 맞추며 우주를 점령해보세요!</p>
+            <span class="card-action">게임 시작 →</span>
+          </div>
         </div>
       </section>
 
@@ -329,6 +336,428 @@
         </div>
       </section>
 
+      <!-- VIEW 6: BOARD GAME SETUP -->
+      <section id="view-marble-setup" class="app-view">
+        <div class="view-header">
+          <button class="btn-back" id="btn-marble-setup-back">← 메인화면</button>
+          <h2>🎲 부루마블 탐험 준비</h2>
+        </div>
+        <div class="setup-layout glass-panel">
+          <div class="setup-section">
+            <h3>1. 게임 모드 및 인원 선택</h3>
+            <div class="setup-row">
+              <label>게임 인원:</label>
+              <div class="option-buttons">
+                <button class="btn-setup-opt active" id="btn-players-2">2명</button>
+                <button class="btn-setup-opt" id="btn-players-3">3명</button>
+                <button class="btn-setup-opt" id="btn-players-4">4명</button>
+                <button class="btn-setup-opt" id="btn-players-5">5명</button>
+              </div>
+            </div>
+            <div class="setup-row">
+              <label>게임 방식:</label>
+              <div class="option-buttons">
+                <button class="btn-setup-opt active" id="btn-mode-solo">개인전</button>
+                <button class="btn-setup-opt" id="btn-mode-team">모둠전</button>
+              </div>
+            </div>
+            <div class="setup-row">
+              <label>주사위 개수:</label>
+              <div class="option-buttons">
+                <button class="btn-setup-opt" id="btn-dice-count-1">1개</button>
+                <button class="btn-setup-opt active" id="btn-dice-count-2">2개</button>
+              </div>
+            </div>
+            <div class="setup-row">
+              <label>접속 방식:</label>
+              <div class="option-buttons">
+                <button class="btn-setup-opt active" id="btn-conn-local">단일 기기 플레이</button>
+                <button class="btn-setup-opt" id="btn-conn-online">온라인 멀티 플레이</button>
+              </div>
+            </div>
+            <div class="setup-row" id="setup-online-actions" style="display: none;">
+              <label>방 개설 및 공유:</label>
+              <div class="online-setup-buttons" style="display: flex; gap: 8px;">
+                <button class="btn-primary btn-small" id="btn-create-room">방 만들기 🔑</button>
+                <button class="btn-accent btn-small" id="btn-copy-link" style="display: none;">초대 링크 복사 🔗</button>
+              </div>
+            </div>
+            <div class="online-status-banner" id="online-status-banner" style="display: none; width: 100%; text-align: center; padding: 8px; border-radius: 8px; background: rgba(0,230,118,0.06); border: 1px dashed var(--color-accent); font-size: 13px; color: var(--color-accent);">
+              <span id="online-status-text">로컬 대기 중...</span>
+            </div>
+            <div class="setup-row">
+              <label>게임 턴 수 (최대):</label>
+              <select id="select-marble-turns" class="setup-select">
+                <option value="5">5턴 (스피드)</option>
+                <option value="10" selected>10턴 (보통)</option>
+                <option value="15">15턴 (긴 게임)</option>
+                <option value="20">20턴 (마라톤)</option>
+              </select>
+            </div>
+          </div>
+          <div class="setup-section">
+            <h3>2. 탐험대 이름 설정</h3>
+            <div class="players-inputs-container" id="marble-players-inputs">
+              <!-- Dynamically populated name input text fields -->
+            </div>
+          </div>
+          <div class="setup-footer">
+            <button class="btn-primary" id="btn-marble-start">우주선 발사! (게임 시작)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 7: BOARD GAME BOARD -->
+      <section id="view-marble" class="app-view">
+        <div class="view-header">
+          <button class="btn-back" id="btn-marble-game-back">← 게임 종료</button>
+          <h2>🎲 별자리 부루마블</h2>
+          <div class="turn-counter">남은 턴: <span id="marble-turns-left">10</span></div>
+        </div>
+
+        <div class="marble-game-container">
+          <!-- Left side: The Board -->
+          <div class="board-panel">
+            <div class="marble-board" id="marble-board-grid">
+              
+              <!-- Corners -->
+              <!-- Tile 0: Start -->
+              <div class="board-tile corner start" data-index="0" id="tile-0">
+                <div class="tile-bg"></div>
+                <div class="tile-icon">🚀</div>
+                <div class="tile-name">출발</div>
+                <div class="token-container" id="token-container-0"></div>
+              </div>
+              
+              <!-- Top Row (1 to 5) -->
+              <div class="board-tile prop spring" data-index="1" id="tile-1">
+                <div class="tile-season-tag">봄</div>
+                <div class="tile-name">사자자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-1"></div>
+              </div>
+              <div class="board-tile prop spring" data-index="2" id="tile-2">
+                <div class="tile-season-tag">봄</div>
+                <div class="tile-name">처녀자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-2"></div>
+              </div>
+              <div class="board-tile chance" data-index="3" id="tile-3">
+                <div class="tile-icon" style="color: #ffd700;">🔑</div>
+                <div class="tile-name" style="color: #ffd700;">황금열쇠</div>
+                <div class="token-container" id="token-container-3"></div>
+              </div>
+              <div class="board-tile prop spring" data-index="4" id="tile-4">
+                <div class="tile-season-tag">봄</div>
+                <div class="tile-name">목동자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-4"></div>
+              </div>
+              <div class="board-tile prop spring" data-index="5" id="tile-5">
+                <div class="tile-season-tag">봄</div>
+                <div class="tile-name">바다뱀자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-5"></div>
+              </div>
+              
+              <!-- Tile 6: Space Station -->
+              <div class="board-tile corner station" data-index="6" id="tile-6">
+                <div class="tile-bg"></div>
+                <div class="tile-icon">🛰️</div>
+                <div class="tile-name">우주정거장</div>
+                <div class="token-container" id="token-container-6"></div>
+              </div>
+              
+              <!-- Right Col (7 to 11) -->
+              <div class="board-tile prop summer" data-index="7" id="tile-7">
+                <div class="tile-season-tag">여름</div>
+                <div class="tile-name">전갈자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-7"></div>
+              </div>
+              <div class="board-tile prop summer" data-index="8" id="tile-8">
+                <div class="tile-season-tag">여름</div>
+                <div class="tile-name">독수리자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-8"></div>
+              </div>
+              <div class="board-tile chance" data-index="9" id="tile-9">
+                <div class="tile-icon" style="color: #ffd700;">🔑</div>
+                <div class="tile-name" style="color: #ffd700;">황금열쇠</div>
+                <div class="token-container" id="token-container-9"></div>
+              </div>
+              <div class="board-tile prop summer" data-index="10" id="tile-10">
+                <div class="tile-season-tag">여름</div>
+                <div class="tile-name">백조자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-10"></div>
+              </div>
+              <div class="board-tile prop summer" data-index="11" id="tile-11">
+                <div class="tile-season-tag">여름</div>
+                <div class="tile-name">궁수자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-11"></div>
+              </div>
+              
+              <!-- Tile 12: Black Hole -->
+              <div class="board-tile corner blackhole" data-index="12" id="tile-12">
+                <div class="tile-bg"></div>
+                <div class="tile-icon">🕳️</div>
+                <div class="tile-name">블랙홀</div>
+                <div class="token-container" id="token-container-12"></div>
+              </div>
+              
+              <!-- Bottom Row (13 to 17) -->
+              <div class="board-tile prop autumn" data-index="13" id="tile-13">
+                <div class="tile-season-tag">가을</div>
+                <div class="tile-name">페가수스</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-13"></div>
+              </div>
+              <div class="board-tile prop autumn" data-index="14" id="tile-14">
+                <div class="tile-season-tag">가을</div>
+                <div class="tile-name">안드로메다</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-14"></div>
+              </div>
+              <div class="board-tile chance" data-index="15" id="tile-15">
+                <div class="tile-icon" style="color: #ffd700;">🔑</div>
+                <div class="tile-name" style="color: #ffd700;">황금열쇠</div>
+                <div class="token-container" id="token-container-15"></div>
+              </div>
+              <div class="board-tile prop autumn" data-index="16" id="tile-16">
+                <div class="tile-season-tag">가을</div>
+                <div class="tile-name">물고기자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-16"></div>
+              </div>
+              <div class="board-tile prop autumn" data-index="17" id="tile-17">
+                <div class="tile-season-tag">가을</div>
+                <div class="tile-name">물병자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-17"></div>
+              </div>
+              
+              <!-- Tile 18: Meteor Express -->
+              <div class="board-tile corner meteor" data-index="18" id="tile-18">
+                <div class="tile-bg"></div>
+                <div class="tile-icon">☄️</div>
+                <div class="tile-name">유성우급행</div>
+                <div class="token-container" id="token-container-18"></div>
+              </div>
+              
+              <!-- Left Col (19 to 23) -->
+              <div class="board-tile prop winter" data-index="19" id="tile-19">
+                <div class="tile-season-tag">겨울</div>
+                <div class="tile-name">쌍둥이자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-19"></div>
+              </div>
+              <div class="board-tile prop winter" data-index="20" id="tile-20">
+                <div class="tile-season-tag">겨울</div>
+                <div class="tile-name">작은개자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-20"></div>
+              </div>
+              <div class="board-tile chance" data-index="21" id="tile-21">
+                <div class="tile-icon" style="color: #ffd700;">🔑</div>
+                <div class="tile-name" style="color: #ffd700;">황금열쇠</div>
+                <div class="token-container" id="token-container-21"></div>
+              </div>
+              <div class="board-tile prop winter" data-index="22" id="tile-22">
+                <div class="tile-season-tag">겨울</div>
+                <div class="tile-name">큰개자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-22"></div>
+              </div>
+              <div class="board-tile prop winter" data-index="23" id="tile-23">
+                <div class="tile-season-tag">겨울</div>
+                <div class="tile-name">오리온자리</div>
+                <div class="tile-owner-indicator"></div>
+                <div class="token-container" id="token-container-23"></div>
+              </div>
+              
+              <!-- Center Panel inside Board Grid -->
+              <div class="board-center glass-panel" id="marble-board-center">
+                <!-- Idle state center -->
+                <div class="center-status-display" id="marble-center-default">
+                  <div class="active-turn-banner" id="marble-active-turn-banner">
+                    <span class="active-player-color" id="marble-player-glow"></span>
+                    <span class="active-player-name" id="marble-active-player">탐험대 1</span>의 차례!
+                  </div>
+                  <p class="center-instruction" id="marble-center-instruction">주사위를 던져주세요.</p>
+                </div>
+                
+                <!-- Action Event overlays inside center -->
+                <!-- 0. Constellation Info Popup (Always shows on landing on owned or special visiting tiles) -->
+                <div class="center-overlay-card" id="marble-card-info" style="display:none; max-width: 90%;">
+                  <h3 class="card-title" id="info-tile-name" style="margin-bottom: 5px; font-size: 16px;">🪐 별자리 방문</h3>
+                  <p class="card-season-tag" id="info-tile-season" style="font-size: 11px; color: var(--color-accent); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;"></p>
+                  <canvas id="info-tile-canvas" width="220" height="130" style="display: block; margin: 8px auto; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.15);"></canvas>
+                  <p class="tile-educational-desc" id="info-tile-desc" style="font-size: 12.5px; line-height: 1.55; color: #ffd54f; background: rgba(0,0,0,0.45); padding: 8px 12px; border-radius: 8px; margin: 8px 0; border: 1px solid rgba(255, 213, 79, 0.25); text-align: left;"></p>
+                  <p id="info-tile-msg" style="font-size: 13px; font-weight: bold; color: #ff5252; margin: 6px 0;"></p>
+                  <div class="card-buttons" style="margin-top: 10px; width: 100%;">
+                    <button class="btn-primary" id="btn-info-proceed" style="width: 100%; padding: 8px 0; font-size: 14px;">확인 ➡️</button>
+                  </div>
+                </div>
+
+                <!-- 1. Purchase Choice Overlay -->
+                <div class="center-overlay-card" id="marble-card-buy" style="display:none; max-width: 90%;">
+                  <h4 class="card-title">🪐 새로운 별자리 발견!</h4>
+                  <p class="card-desc"><strong id="buy-tile-name" class="highlight">오리온자리</strong>를 개척하시겠습니까?</p>
+                  <p class="card-season-tag" id="buy-tile-season" style="font-size: 11px; color: var(--color-accent); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;"></p>
+                  <canvas id="buy-tile-canvas" width="220" height="130" style="display: block; margin: 8px auto; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.15);"></canvas>
+                  <p class="tile-educational-desc" id="buy-tile-desc" style="font-size: 12.5px; line-height: 1.5; color: #ffd54f; background: rgba(0,0,0,0.45); padding: 8px 12px; border-radius: 8px; margin: 8px 0; border: 1px solid rgba(255, 213, 79, 0.25); text-align: left;"></p>
+                  <p class="card-price-label" style="margin-bottom: 8px;">소모 별가루: <strong id="buy-tile-price">150</strong></p>
+                  <div class="card-buttons">
+                    <button class="btn-primary btn-small" id="btn-buy-dust">별가루 지불</button>
+                    <button class="btn-accent btn-small" id="btn-buy-quiz">퀴즈 도전! (무료)</button>
+                    <button class="btn-secondary btn-small" id="btn-buy-skip">건너뛰기</button>
+                  </div>
+                </div>
+
+                <!-- 1.5. Chance Card Overlay -->
+                <div class="center-overlay-card" id="marble-card-chance" style="display:none; max-width: 90%;">
+                  <h4 class="card-title" style="color: #ffd05b; font-size: 16px;">🔑 우주 황금열쇠 🔑</h4>
+                  <div class="chance-card-box" style="background: rgba(255, 215, 0, 0.08); border: 2px dashed #ffd700; border-radius: 12px; padding: 14px; width: 100%; margin: 8px 0; min-height: 90px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box;">
+                    <p id="chance-card-title" style="font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 6px;"></p>
+                    <p id="chance-card-desc" style="font-size: 12px; line-height: 1.5; color: #ffd54f; text-align: center; margin: 0;"></p>
+                  </div>
+                  <div class="card-buttons" style="width: 100%;">
+                    <button class="btn-primary" id="btn-chance-confirm" style="width: 100%; padding: 8px 0; font-size: 14px;">확인</button>
+                  </div>
+                </div>
+
+                <!-- 2. Quiz Overlay -->
+                <div class="center-overlay-card" id="marble-card-quiz" style="display:none;">
+                  <h4 class="card-title">💡 별자리 수호자의 문제</h4>
+                  <div class="quiz-question-box">
+                    <p id="marble-quiz-q">오리온자리 허리 부분에 나란히 놓여 있는 세 개의 별을 무엇이라 할까요?</p>
+                  </div>
+                  <div class="quiz-options-list" id="marble-quiz-options">
+                    <!-- Options generated dynamically -->
+                  </div>
+                </div>
+
+                <!-- 3. Warp selection overlay -->
+                <div class="center-overlay-card" id="marble-card-warp" style="display:none;">
+                  <h4 class="card-title">🌀 은하 워프 드라이브</h4>
+                  <p class="card-desc">이동할 별자리를 보드판에서 직접 클릭하여 워프하세요!</p>
+                  <span class="warp-guide-glow">보드판의 타일을 선택해 주세요...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right side: Game Status and Controls -->
+          <div class="marble-sidebar">
+            <!-- Player Stats Panel -->
+            <div class="stats-panel glass-panel">
+              <h3>탐험대 상태판</h3>
+              <div class="marble-players-list" id="marble-players-status-list">
+                <!-- Dynamically populated players cards -->
+              </div>
+            </div>
+
+            <!-- Dice Roller Panel -->
+            <div class="dice-panel">
+              <div class="dice-area" style="perspective: 500px; gap: 30px; display: flex; justify-content: center; align-items: center; min-height: 120px;">
+                <div class="dice-cube-3d" id="dice-container-1">
+                  <div class="cube" id="cube-element-1">
+                    <div class="cube-face front"><div class="dice-dots dots-1"><div class="dot red-dot"></div></div></div>
+                    <div class="cube-face back">
+                      <div class="dice-dots dots-6">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face right">
+                      <div class="dice-dots dots-3">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face left">
+                      <div class="dice-dots dots-4">
+                        <div class="dot"></div><div class="dot"></div>
+                        <div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face top">
+                      <div class="dice-dots dots-5">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                        <div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face bottom">
+                      <div class="dice-dots dots-2">
+                        <div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="dice-cube-3d" id="dice-container-2">
+                  <div class="cube" id="cube-element-2">
+                    <div class="cube-face front"><div class="dice-dots dots-1"><div class="dot red-dot"></div></div></div>
+                    <div class="cube-face back">
+                      <div class="dice-dots dots-6">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face right">
+                      <div class="dice-dots dots-3">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face left">
+                      <div class="dice-dots dots-4">
+                        <div class="dot"></div><div class="dot"></div>
+                        <div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face top">
+                      <div class="dice-dots dots-5">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                        <div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                    <div class="cube-face bottom">
+                      <div class="dice-dots dots-2">
+                        <div class="dot"></div><div class="dot"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="dice-controls" style="margin-top: 5px; width: 100%;">
+                <button class="btn-primary" id="btn-marble-roll" style="width: 100%; padding: 12px 0; font-size: 15px;">주사위 굴리기 🎲</button>
+              </div>
+            </div>
+
+            <!-- Activity Logs Panel -->
+            <div class="logs-panel glass-panel">
+              <h3>실시간 탐험 일지</h3>
+              <div class="logs-container" id="marble-game-logs">
+                <!-- Dynamically logged items -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Board Game Over Overlay -->
+        <div class="game-result-overlay" id="marble-result-overlay" style="display:none;">
+          <div class="game-result-box glass-panel">
+            <h2>🏆 우주 정복 완료!</h2>
+            <p>모든 탐험 일정이 종료되어 최종 결과를 선포합니다.</p>
+            <div class="marble-final-rankings" id="marble-final-standings">
+              <!-- Dynamically populated rankings -->
+            </div>
+            <button class="btn-primary" id="btn-marble-restart-end">새 게임 시작</button>
+            <button class="btn-secondary" id="btn-marble-lobby">로비로 이동</button>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- Footer -->
@@ -367,7 +796,31 @@
     </div>
   </div>
 
+  <!-- POPUP 3: ONLINE JOIN ROOM MODAL -->
+  <div class="modal-backdrop" id="modal-online-join" style="display: none;">
+    <div class="cabinet-card glass-panel online-join-card" style="max-width: 400px; padding: 24px;">
+      <h2>🌌 온라인 우주 탐험 참가</h2>
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px;">초대받은 방에 참가하여 함께 모험을 시작합니다.</p>
+      <div class="setup-row" style="margin-bottom: 12px;">
+        <label>내 이름:</label>
+        <input type="text" id="online-join-nickname" value="새 탐험가" class="setup-select" style="flex: 1; border: 1.5px solid var(--color-primary); background: rgba(0,0,0,0.4);" maxlength="8">
+      </div>
+      <div class="setup-row" style="margin-bottom: 20px;" id="join-slot-row">
+        <label>참가 모둠:</label>
+        <select id="online-join-slot" class="setup-select" style="flex: 1; background: rgba(0,0,0,0.4); border: 1.5px solid var(--color-primary);">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+      <div class="setup-footer" style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn-primary" id="btn-submit-join" style="padding: 10px 20px;">탐험 시작! 🚀</button>
+        <button class="btn-secondary" id="btn-cancel-join" style="padding: 10px 20px;">취소</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main JavaScript App Controller -->
+  <script src="peerjs.min.js"></script>
+  <script src="marble.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

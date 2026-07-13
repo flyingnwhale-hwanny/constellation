@@ -448,19 +448,6 @@ const MascotController = {
 
   speak(text) {
     this.speechElement.textContent = text;
-    
-    // Stop any current voice
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ko-KR';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.1; // Slightly cute pitch for kids
-      
-      this.currentUtterance = utterance;
-      window.speechSynthesis.speak(utterance);
-    }
   },
 
   setBubbleTextOnly(text) {
@@ -576,12 +563,19 @@ const AppController = {
     document.getElementById("card-goto-connect").addEventListener("click", () => this.switchView("view-connect"));
     document.getElementById("card-goto-sorter").addEventListener("click", () => this.switchView("view-sorter"));
     document.getElementById("card-goto-search").addEventListener("click", () => this.switchView("view-search"));
+    document.getElementById("card-goto-marble").addEventListener("click", () => this.switchView("view-marble-setup"));
 
     // Back buttons
     document.getElementById("btn-library-back").addEventListener("click", () => this.switchView("view-lobby"));
     document.getElementById("btn-connect-back").addEventListener("click", () => this.switchView("view-lobby"));
     document.getElementById("btn-sorter-back").addEventListener("click", () => this.switchView("view-lobby"));
     document.getElementById("btn-search-back").addEventListener("click", () => this.switchView("view-lobby"));
+    document.getElementById("btn-marble-setup-back").addEventListener("click", () => this.switchView("view-lobby"));
+    document.getElementById("btn-marble-game-back").addEventListener("click", () => {
+      if (confirm("현재 별자리 부루마블 게임을 종료하고 로비로 돌아가시겠습니까?")) {
+        MarbleGameModule.endGame(true);
+      }
+    });
 
     // Modal close buttons
     document.getElementById("btn-close-badge-modal").addEventListener("click", () => {
@@ -613,6 +607,7 @@ const AppController = {
     ConnectGameModule.init();
     SorterGameModule.init();
     SearchGameModule.init();
+    MarbleGameModule.init();
   },
 
   switchView(viewId) {
@@ -637,6 +632,8 @@ const AppController = {
       SorterGameModule.onActivate();
     } else if (viewId === "view-search") {
       SearchGameModule.onActivate();
+    } else if (viewId === "view-marble-setup") {
+      MarbleGameModule.onActivateSetup();
     }
   },
 
