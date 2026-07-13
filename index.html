@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우주 별자리 탐험대 - 재미있는 계절 별자리 게임</title>
+  <!-- SEO Tags -->
+  <meta name="description" content="초등학생을 위한 신나는 계절별 별자리 탐험 게임! 봄, 여름, 가을, 겨울의 대표 별자리를 그리기, 분류하기, 찾기 게임으로 재미있게 배워보세요.">
+  <meta name="keywords" content="별자리, 어린이 게임, 초등 교육, 과학 교육, 계절 별자리, 오리온자리, 사자자리, 백조자리, 페가수스자리">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Twinkling Star Background Layer -->
+  <div class="stars-container" id="stars-container"></div>
+  <div class="nebula-overlay"></div>
+
+  <!-- App Wrapper -->
+  <div id="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo" id="btn-home-logo">
+        <span class="logo-icon">✨</span>
+        <h1 class="logo-text">SPACE <span>EXPLORERS</span></h1>
+      </div>
+      <div class="header-status">
+        <div class="status-item score-display">
+          <span class="status-label">탐험 점수</span>
+          <span class="status-value" id="user-score">0</span>
+        </div>
+        <div class="status-item badge-trigger" id="btn-view-badges">
+          <span class="status-label">획득 뱃지</span>
+          <span class="status-value" id="badge-count">0 / 8</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mascot Speech Area -->
+    <section class="mascot-section" id="mascot-bar">
+      <div class="mascot-avatar">🛸</div>
+      <div class="mascot-speech-bubble">
+        <p id="mascot-text">안녕! 나는 탐험 도우미 '별이'야. 밤하늘의 숨겨진 별자리들을 찾으러 함께 우주선에 탑승해볼까?</p>
+      </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <main id="main-content">
+      
+      <!-- VIEW 1: LOBBY -->
+      <section id="view-lobby" class="app-view active">
+        <div class="lobby-welcome">
+          <h2>밤하늘의 비밀을 풀 준비가 되었나요?</h2>
+          <p>네 가지 특별한 모드로 16개의 아름다운 대표 별자리들을 마스터해보세요!</p>
+        </div>
+        <div class="lobby-grid">
+          <!-- Card 1: Library -->
+          <div class="lobby-card card-library" id="card-goto-library">
+            <div class="card-icon">📖</div>
+            <h3>별자리 도감</h3>
+            <p>봄, 여름, 가을, 겨울의 대표 별자리 16개의 모습과 이야기를 자세히 살펴보아요.</p>
+            <span class="card-action">도감 열기 →</span>
+          </div>
+          <!-- Card 2: Connect Game -->
+          <div class="lobby-card card-goto-connect" id="card-goto-connect">
+            <div class="card-icon">✏️</div>
+            <h3>별자리 그리기</h3>
+            <p>별들을 선으로 이어서 별자리의 숨겨진 동물의 모습과 전설을 밝혀내요!</p>
+            <span class="card-action">게임 시작 →</span>
+          </div>
+          <!-- Card 3: Sorter Game -->
+          <div class="lobby-card card-goto-sorter" id="card-goto-sorter">
+            <div class="card-icon">🌀</div>
+            <h3>계절 분류기</h3>
+            <p>별자리가 속한 제철 계절의 은하수 블랙홀 속으로 알맞게 골인시켜주세요.</p>
+            <span class="card-action">게임 시작 →</span>
+          </div>
+          <!-- Card 4: Search Game -->
+          <div class="lobby-card card-goto-search" id="card-goto-search">
+            <div class="card-icon">🔭</div>
+            <h3>밤하늘 탐험</h3>
+            <p>망원경을 움직이며 광활한 밤하늘에 꼭꼭 숨은 별자리를 찾아보세요!</p>
+            <span class="card-action">게임 시작 →</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: LIBRARY -->
+      <section id="view-library" class="app-view">
+        <div class="view-header">
+          <button class="btn-back" id="btn-library-back">← 메인화면</button>
+          <h2>🌟 별자리 도감</h2>
+        </div>
+        
+        <!-- Season Navigation -->
+        <div class="season-selector">
+          <button class="season-tab active" data-season="spring" id="tab-spring">🌸 봄</button>
+          <button class="season-tab" data-season="summer" id="tab-summer">☀️ 여름</button>
+          <button class="season-tab" data-season="autumn" id="tab-autumn">🍁 가을</button>
+          <button class="season-tab" data-season="winter" id="tab-winter">❄️ 겨울</button>
+        </div>
+
+        <div class="library-layout">
+          <!-- Constellation List (Left side) -->
+          <div class="constellation-list" id="library-list-container">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Interactive Star Chart & Details (Right side) -->
+          <div class="library-details glass-panel">
+            <div class="library-map-wrapper">
+              <canvas id="library-canvas" width="400" height="400"></canvas>
+              <div class="chart-guide">스크롤/드래그하여 모양을 관찰하세요</div>
+            </div>
+            <div class="library-info-panel">
+              <div class="info-header">
+                <h3 id="lib-name-ko">사자자리</h3>
+                <span class="name-en" id="lib-name-en">Leo</span>
+              </div>
+              <div class="info-badge-row">
+                <span class="info-tag" id="lib-season-tag">봄철의 별자리</span>
+                <span class="info-tag bright-star" id="lib-bright-star">가장 밝은 별: 레굴루스</span>
+              </div>
+              <div class="info-body">
+                <h4>상징 모양</h4>
+                <p id="lib-shape-desc">머리 부분은 낫(물음표 뒤집은 모양)과 같고, 꼬리는 세모 형태를 이룬 사자의 모습이에요.</p>
+                <h4>재미있는 이야기</h4>
+                <p id="lib-story-desc">헤라클레스가 첫 번째 모험에서 물리친 무적의 네메아 골짜기 사자가 제우스에 의해 별자리가 되었습니다.</p>
+              </div>
+              <div class="info-footer">
+                <button class="btn-audio" id="btn-lib-speak">🔊 목소리로 듣기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: CONNECT THE DOTS GAME -->
+      <section id="view-connect" class="app-view">
+        <div class="view-header">
+          <button class="btn-back" id="btn-connect-back">← 메인화면</button>
+          <h2>✏️ 별자리 그리기</h2>
+          <div class="game-progress-bar">
+            <div class="progress-fill" id="connect-progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="game-layout">
+          <!-- Canvas Panel -->
+          <div class="canvas-panel glass-panel">
+            <div class="canvas-container">
+              <canvas id="connect-canvas" width="500" height="500"></canvas>
+              <!-- Constellation overlay drawing -->
+              <div class="illustration-overlay" id="connect-overlay"></div>
+            </div>
+            <div class="canvas-controls">
+              <button class="btn-game-control" id="btn-connect-hint">💡 힌트 보기</button>
+              <button class="btn-game-control" id="btn-connect-reset">🔄 다시 그리기</button>
+            </div>
+          </div>
+
+          <!-- Game Dashboard -->
+          <div class="game-dashboard glass-panel">
+            <div class="dashboard-header">
+              <span class="game-stage-indicator" id="connect-stage-num">STAGE 1/16</span>
+              <h3 id="connect-target-name">사자자리</h3>
+              <p id="connect-target-desc">별들을 순서대로 드래그하거나 클릭해 이어서 사자의 모양을 그려보세요!</p>
+            </div>
+            <div class="dashboard-hint-box" id="connect-hint-box">
+              <p><strong>반짝이는 별</strong>부터 차례로 이어주세요!</p>
+            </div>
+            <div class="dashboard-status">
+              <div class="status-row">
+                <span>남은 별 개수</span>
+                <span class="status-num highlight" id="connect-stars-left">0/0</span>
+              </div>
+              <div class="status-row">
+                <span>획득 점수</span>
+                <span class="status-num" id="connect-score">+100</span>
+              </div>
+            </div>
+            <button class="btn-primary" id="btn-connect-next" style="display:none;">다음 별자리 그리기 →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: GALAXY SORTER GAME -->
+      <section id="view-sorter" class="app-view">
+        <div class="view-header">
+          <button class="btn-back" id="btn-sorter-back">← 메인화면</button>
+          <h2>🌀 계절 분류기</h2>
+          <div class="sorter-timer">제한시간: <span id="sorter-time-left">60</span>초</div>
+        </div>
+
+        <div class="sorter-container">
+          <!-- Instructions -->
+          <div class="sorter-info">
+            <p>카드 속 별자리가 어느 계절의 대표 별자리인지 판단하고 올바른 우주 정거장으로 드래그 앤 드롭해 분류하세요!</p>
+            <div class="sorter-stats">
+              <span>맞춘 개수: <strong id="sorter-score-correct" class="highlight">0</strong></span>
+              <span>남은 카드: <strong id="sorter-cards-left">16</strong></span>
+            </div>
+          </div>
+
+          <!-- Cards Stack (Deck Area) -->
+          <div class="sorter-deck-area">
+            <div class="card-drag-zone" id="sorter-card-zone">
+              <!-- Draggable card will be rendered here dynamically -->
+              <div class="sorter-card" id="active-sorter-card" draggable="true">
+                <div class="card-inner">
+                  <div class="card-star-preview">
+                    <canvas id="sorter-card-canvas" width="180" height="180"></canvas>
+                  </div>
+                  <h4 id="sorter-card-name">오리온자리</h4>
+                  <p id="sorter-card-hint">가장 밝은 별: 시리우스(큰개자리)와 함께 삼태성을 품은 겨울의 제왕!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drop Targets (Seasons Vortexes) -->
+          <div class="sorter-vortexes-grid">
+            <div class="vortex-box spring" data-season="spring" id="vortex-spring">
+              <div class="vortex-portal">🌸</div>
+              <h4>봄의 은하</h4>
+              <span class="vortex-count" id="vortex-count-spring">0 / 4</span>
+            </div>
+            <div class="vortex-box summer" data-season="summer" id="vortex-summer">
+              <div class="vortex-portal">☀️</div>
+              <h4>여름의 은하</h4>
+              <span class="vortex-count" id="vortex-count-summer">0 / 4</span>
+            </div>
+            <div class="vortex-box autumn" data-season="autumn" id="vortex-autumn">
+              <div class="vortex-portal">🍁</div>
+              <h4>가을의 은하</h4>
+              <span class="vortex-count" id="vortex-count-autumn">0 / 4</span>
+            </div>
+            <div class="vortex-box winter" data-season="winter" id="vortex-winter">
+              <div class="vortex-portal">❄️</div>
+              <h4>겨울의 은하</h4>
+              <span class="vortex-count" id="vortex-count-winter">0 / 4</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sorter Game Over Panel -->
+        <div class="game-result-overlay" id="sorter-result-overlay" style="display:none;">
+          <div class="game-result-box glass-panel">
+            <h2>🛸 탐험 완료!</h2>
+            <p>은하수 분류 장치를 성공적으로 복구했습니다!</p>
+            <div class="result-stats">
+              <div class="result-stat-item">
+                <span>정답 개수</span>
+                <strong id="result-sorter-correct">12 / 16</strong>
+              </div>
+              <div class="result-stat-item">
+                <span>보너스 점수</span>
+                <strong id="result-sorter-points">+350점</strong>
+              </div>
+            </div>
+            <button class="btn-primary" id="btn-sorter-restart">다시 도전하기</button>
+            <button class="btn-secondary" id="btn-sorter-lobby">로비로 이동</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: SKY SEARCH GAME -->
+      <section id="view-search" class="app-view">
+        <div class="view-header">
+          <button class="btn-back" id="btn-search-back">← 메인화면</button>
+          <h2>🔭 밤하늘 탐험</h2>
+          <div class="search-instructions">목표 별자리: <strong id="search-target-text" class="highlight">독수리자리</strong>를 밤하늘에서 찾으세요!</div>
+        </div>
+
+        <div class="search-game-container">
+          <!-- Left side status / hints -->
+          <div class="search-panel glass-panel">
+            <h3>별자리 탐색 레이더</h3>
+            <p>마우스 드래그나 스크롤로 밤하늘을 조심스럽게 둘러보세요. 별들이 옹기종기 뭉친 곳에 망원경을 가져가 클릭해보세요!</p>
+            
+            <div class="radar-box">
+              <div class="radar-sweeper"></div>
+              <div class="radar-dot" id="radar-hint-dot"></div>
+            </div>
+
+            <div class="search-clue">
+              <h4>길잡이 힌트</h4>
+              <p id="search-clue-text">독수리자리는 가장 밝은 별 '알타이르(견우성)'를 품고 있으며, 새가 날개를 펼친 것 같은 십자 날개 모양이에요.</p>
+            </div>
+
+            <div class="search-progress">
+              <span>남은 계절 별자리: <strong id="search-left-count">4/4</strong></span>
+              <div class="score-addition" id="search-score-add">+0</div>
+            </div>
+          </div>
+
+          <!-- Right side large panning viewport -->
+          <div class="viewport-panel">
+            <div class="sky-panning-container" id="sky-drag-container">
+              <canvas id="search-sky-canvas" width="1200" height="900"></canvas>
+              <!-- Telescope hover circle frame -->
+              <div class="telescope-aim" id="telescope-sight"></div>
+            </div>
+            <div class="drag-tip">마우스나 터치로 화면을 잡아끌어 밤하늘 전체를 탐색하세요 (지형 크기: 1200x900)</div>
+          </div>
+        </div>
+
+        <!-- Search Game Complete Overlay -->
+        <div class="game-result-overlay" id="search-result-overlay" style="display:none;">
+          <div class="game-result-box glass-panel">
+            <h2>🌌 우주 지도 완성!</h2>
+            <p>광활한 어둠 속에서 목표로 하던 대표 별자리를 모두 탐색했습니다.</p>
+            <div class="result-stats">
+              <div class="result-stat-item">
+                <span>발견한 별자리</span>
+                <strong>16개 대표 별자리</strong>
+              </div>
+              <div class="result-stat-item">
+                <span>총 점수 획득</span>
+                <strong id="result-search-points">+800점</strong>
+              </div>
+            </div>
+            <button class="btn-primary" id="btn-search-restart">밤하늘 재탐색</button>
+            <button class="btn-secondary" id="btn-search-lobby">로비로 이동</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>© 2026 Space Constellation Explorers. 초등학생 천문학 과학 게임 포털</p>
+    </footer>
+  </div>
+
+  <!-- POPUP 1: BADGE CELEBRATION MODAL -->
+  <div class="modal-backdrop" id="modal-badge" style="display: none;">
+    <div class="badge-unlock-card">
+      <div class="badge-light-ray"></div>
+      <div class="badge-sparkles"></div>
+      <div class="badge-icon-large" id="unlocked-badge-icon">🎖️</div>
+      <h2 class="badge-unlocked-title">우주 뱃지 획득!</h2>
+      <h3 id="unlocked-badge-name">봄의 별자리 정복자</h3>
+      <p id="unlocked-badge-desc">봄철 별자리 4개를 모두 학습하고 정답을 맞추어 든든한 가이드 별이의 칭찬을 얻었습니다!</p>
+      <button class="btn-primary" id="btn-close-badge-modal">지구로 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- POPUP 2: BADGE CABINET MODAL -->
+  <div class="modal-backdrop" id="modal-badges-cabinet" style="display: none;">
+    <div class="cabinet-card glass-panel">
+      <div class="cabinet-header">
+        <h2>🎖️ 내 탐험 뱃지 보관함</h2>
+        <button class="btn-close-cabinet" id="btn-close-cabinet">×</button>
+      </div>
+      <div class="cabinet-grid" id="badge-cabinet-grid">
+        <!-- Dynamically populated badge slots -->
+      </div>
+      <div class="cabinet-footer">
+        <p>각 도전과제를 완료해 총 8개의 은하수 탐사 뱃지를 수집해 보세요!</p>
+        <button class="btn-danger" id="btn-reset-progress">탐험 기록 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript App Controller -->
+  <script src="app.js"></script>
+</body>
+</html>
