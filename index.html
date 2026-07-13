@@ -394,6 +394,15 @@
                 <option value="20">20턴 (마라톤)</option>
               </select>
             </div>
+            <div class="setup-row" id="setup-quiz-time-row">
+              <label>퀴즈 제한 시간:</label>
+              <select id="select-marble-quiz-time" class="setup-select">
+                <option value="10">10초 (매우 빠름)</option>
+                <option value="15" selected>15초 (적당함)</option>
+                <option value="20">20초 (느긋함)</option>
+                <option value="30">30초 (초보자)</option>
+              </select>
+            </div>
           </div>
           <div class="setup-section">
             <h3>2. 탐험대 이름 설정</h3>
@@ -631,6 +640,9 @@
                 <!-- 2. Quiz Overlay -->
                 <div class="center-overlay-card" id="marble-card-quiz" style="display:none;">
                   <h4 class="card-title">💡 별자리 수호자의 문제</h4>
+                  <div class="quiz-timer-box" style="font-size: 13.5px; font-weight: 800; color: #ff5252; margin: 4px 0 10px 0; background: rgba(255, 82, 82, 0.08); padding: 5px 12px; border-radius: 6px; border: 1px dashed rgba(255, 82, 82, 0.3); display: flex; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box; width: 100%;">
+                    ⏳ 남은 시간: <span id="marble-quiz-timer" style="font-size: 15px; font-family: monospace;">15</span>초
+                  </div>
                   <div class="quiz-question-box">
                     <p id="marble-quiz-q">오리온자리 허리 부분에 나란히 놓여 있는 세 개의 별을 무엇이라 할까요?</p>
                   </div>

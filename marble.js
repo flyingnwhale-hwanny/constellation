@@ -518,6 +518,7 @@ const MarbleNetwork = {
         MarbleGameModule.isSoloMode = data.isSoloMode;
         MarbleGameModule.players = data.players;
         MarbleGameModule.diceCount = data.diceCount || 2;
+        MarbleGameModule.quizTimeLimit = data.quizTimeLimit || 15;
         
         // Toggle 2nd die visibility
         document.getElementById("dice-container-2").style.display = (MarbleGameModule.diceCount === 1) ? "none" : "inline-block";
@@ -545,6 +546,7 @@ const MarbleNetwork = {
         MarbleGameModule.maxTurnsLimit = data.maxTurnsLimit;
         MarbleGameModule.isSoloMode = data.isSoloMode;
         MarbleGameModule.diceCount = data.diceCount || 2;
+        MarbleGameModule.quizTimeLimit = data.quizTimeLimit || 15;
         
         document.getElementById("dice-container-2").style.display = (MarbleGameModule.diceCount === 1) ? "none" : "inline-block";
         
@@ -643,6 +645,9 @@ const MarbleGameModule = {
   activeTileIdx: 0,
   diceCount: 2,
   pendingAction: null,
+  quizTimerInterval: null,
+  quizTimeLimit: 15,
+  quizTimeRemaining: 0,
 
   init() {
     document.querySelectorAll(".board-tile.prop").forEach(tile => {
@@ -932,6 +937,9 @@ const MarbleGameModule = {
     const turnSelect = document.getElementById("select-marble-turns");
     this.maxTurnsLimit = parseInt(turnSelect.value);
 
+    const quizTimeSelect = document.getElementById("select-marble-quiz-time");
+    this.quizTimeLimit = quizTimeSelect ? parseInt(quizTimeSelect.value) : 15;
+
     this.players = [];
     const defaultTeamNames = ["홍팀", "청팀", "녹팀", "황팀", "자팀"];
 
@@ -995,7 +1003,8 @@ const MarbleGameModule = {
         maxTurnsLimit: this.maxTurnsLimit,
         isSoloMode: this.isSoloMode,
         players: this.players,
-        diceCount: this.diceCount
+        diceCount: this.diceCount,
+        quizTimeLimit: this.quizTimeLimit
       });
       this.syncStateWithClients();
     }
@@ -1011,7 +1020,8 @@ const MarbleGameModule = {
         currentTurnCount: this.currentTurnCount,
         maxTurnsLimit: this.maxTurnsLimit,
         isSoloMode: this.isSoloMode,
-        diceCount: this.diceCount
+        diceCount: this.diceCount,
+        quizTimeLimit: this.quizTimeLimit
       });
     }
   },
@@ -1096,6 +1106,10 @@ const MarbleGameModule = {
   },
 
   closeOverlays() {
+    if (this.quizTimerInterval) {
+      clearInterval(this.quizTimerInterval);
+      this.quizTimerInterval = null;
+    }
     document.getElementById("marble-card-info").style.display = "none";
     document.getElementById("marble-card-buy").style.display = "none";
     document.getElementById("marble-card-chance").style.display = "none";
@@ -1581,6 +1595,33 @@ const MarbleGameModule = {
 
     document.getElementById("marble-quiz-options").style.display = "flex";
     document.getElementById("marble-card-quiz").style.display = "flex";
+
+    // Start local countdown timer
+    if (this.quizTimerInterval) {
+      clearInterval(this.quizTimerInterval);
+    }
+    this.quizTimeRemaining = this.quizTimeLimit;
+    document.getElementById("marble-quiz-timer").textContent = this.quizTimeRemaining;
+
+    this.quizTimerInterval = setInterval(() => {
+      this.quizTimeRemaining--;
+      document.getElementById("marble-quiz-timer").textContent = this.quizTimeRemaining;
+
+      if (this.quizTimeRemaining <= 0) {
+        clearInterval(this.quizTimerInterval);
+        this.quizTimerInterval = null;
+
+        // Auto submit incorrect choice (-1) on timeout if local player controls
+        if (this.canLocalPlayerControl()) {
+          this.log(`시간 초과! ${this.players[this.activePlayerIdx].name} 탐험대의 답변 제한 시간이 만료되었습니다.`, "highlight-pay");
+          if (MarbleNetwork.peer && !MarbleNetwork.isHost) {
+            MarbleNetwork.send({ type: "QUIZ_ANSWER_REQ", selectedIdx: -1, correctIdx: quiz.ans });
+          } else {
+            this.submitQuizAnswer(-1, quiz.ans);
+          }
+        }
+      }
+    }, 1000);
   },
 
   submitQuizAnswer(selectedIdx, correctIdx) {
