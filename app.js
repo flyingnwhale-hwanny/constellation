@@ -1670,12 +1670,32 @@ const SearchGameModule = {
     const targetMap = activeElements.find(el => el.constellation.id === this.currentTarget.id);
     if (!targetMap) return;
 
-    const tx = targetMap.originX + 200;
-    const ty = targetMap.originY + 200;
-    const distance = Math.sqrt((tx - x) ** 2 + (ty - y) ** 2);
+    const item = targetMap.constellation;
+    const ox = targetMap.originX;
+    const oy = targetMap.originY;
 
+    // Check 1: 70% of the constellation's stars are inside the telescope viewfinder circle
+    const R = this.sightSize / 2;
+    let starsInside = 0;
+    item.stars.forEach(star => {
+      const starAbsoluteX = ox + star.x;
+      const starAbsoluteY = oy + star.y;
+      const d = Math.sqrt((starAbsoluteX - x) ** 2 + (starAbsoluteY - y) ** 2);
+      if (d <= R) {
+        starsInside++;
+      }
+    });
+    const insideRatio = starsInside / item.stars.length;
+    const is70PercentInside = insideRatio >= 0.7;
+
+    // Check 2: Center distance check (fallback for small constellations or close centering)
+    const tx = ox + 200;
+    const ty = oy + 200;
+    const centerDistance = Math.sqrt((tx - x) ** 2 + (ty - y) ** 2);
     const allowedDistance = Math.max(120, this.sightSize * 0.9);
-    if (distance < allowedDistance) {
+    const isCenterClose = centerDistance < allowedDistance;
+
+    if (is70PercentInside || isCenterClose) {
       this.isTransitioning = true;
       targetMap.found = true;
       this.foundCount++;
