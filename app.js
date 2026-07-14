@@ -1546,6 +1546,7 @@ const SearchGameModule = {
         for (let c = 0; c < cols; c++) {
           if (k >= deck.length) break;
           const item = deck[k++];
+          item.season = season; // Inject season property
 
           // Random placement offset within cell
           const offsetX = cellW * c + Math.random() * (cellW - 320) + 40;
@@ -1561,10 +1562,13 @@ const SearchGameModule = {
       }
     }
 
-    // Build target queue
+    // Build target queue and inject season property
     this.targetList = [];
     for (const season in CONSTELLATION_DB) {
-      this.targetList.push(...CONSTELLATION_DB[season]);
+      CONSTELLATION_DB[season].forEach(item => {
+        item.season = season; // Inject season property
+        this.targetList.push(item);
+      });
     }
     this.shuffle(this.targetList);
 
