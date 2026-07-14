@@ -465,6 +465,30 @@ const MarbleNetwork = {
           }
         }
       }
+      else if (data.type === "INFO_PROCEED_REQ") {
+        const activePlayer = MarbleGameModule.players[MarbleGameModule.activePlayerIdx];
+        const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
+        
+        if (senderPlayer && activePlayer.id === senderPlayer.teamIdx) {
+          if (MarbleGameModule.pendingAction) {
+            const action = MarbleGameModule.pendingAction;
+            MarbleGameModule.pendingAction = null;
+            action();
+          }
+        }
+      }
+      else if (data.type === "CHANCE_CONFIRM_REQ") {
+        const activePlayer = MarbleGameModule.players[MarbleGameModule.activePlayerIdx];
+        const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
+        
+        if (senderPlayer && activePlayer.id === senderPlayer.teamIdx) {
+          if (MarbleGameModule.pendingAction) {
+            const action = MarbleGameModule.pendingAction;
+            MarbleGameModule.pendingAction = null;
+            action();
+          }
+        }
+      }
       else if (data.type === "WARP_DECISION_REQ") {
         const activePlayer = MarbleGameModule.players[MarbleGameModule.activePlayerIdx];
         const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
@@ -604,9 +628,10 @@ const MarbleNetwork = {
         MascotController.setBubbleTextOnly(`🌀 ${MarbleGameModule.players[MarbleGameModule.activePlayerIdx].name}의 우주선 워프 위치 선택 중...`);
       }
       else if (data.type === "SHOW_INFO_OVERLAY") {
-        document.getElementById("info-tile-name").textContent = `🪐 ${data.tileName}`;
+        document.getElementById("info-tile-name").textContent = data.titleLabel || `🪐 ${data.tileName}`;
         document.getElementById("info-tile-season").textContent = `${data.tileSeason.toUpperCase()} CONSTELLATION`;
         document.getElementById("info-tile-desc").textContent = data.tileDesc;
+        document.getElementById("info-tile-msg").textContent = data.tileMsg || "";
         
         const canvas = document.getElementById("info-tile-canvas");
         if (canvas) {
@@ -773,6 +798,9 @@ const MarbleGameModule = {
     document.getElementById("btn-info-proceed").addEventListener("click", () => {
       if (MarbleNetwork.peer && !MarbleNetwork.isHost) {
         document.getElementById("marble-card-info").style.display = "none";
+        if (this.canLocalPlayerControl()) {
+          MarbleNetwork.send({ type: "INFO_PROCEED_REQ" });
+        }
       } else {
         if (this.pendingAction) {
           const action = this.pendingAction;
@@ -785,6 +813,9 @@ const MarbleGameModule = {
     document.getElementById("btn-chance-confirm").addEventListener("click", () => {
       if (MarbleNetwork.peer && !MarbleNetwork.isHost) {
         document.getElementById("marble-card-chance").style.display = "none";
+        if (this.canLocalPlayerControl()) {
+          MarbleNetwork.send({ type: "CHANCE_CONFIRM_REQ" });
+        }
       } else {
         if (this.pendingAction) {
           const action = this.pendingAction;
@@ -1377,129 +1408,117 @@ const MarbleGameModule = {
       const desc = this.getConstellationDesc(tile.id);
       const seasonName = this.getConstellationSeasonName(tile.season);
 
-      if (ownerIdx === undefined) {
-        if (MarbleNetwork.isHost) {
-          MarbleNetwork.broadcast({
-            type: "SHOW_BUY_OVERLAY",
-            tileIdx: pos,
-            tileId: tile.id,
-            tileName: tile.name,
-            tilePrice: tile.price,
-            tileDesc: desc,
-            tileSeason: seasonName
-          });
-        }
+      let titleLabel = "";
+      let msg = "";
+      let mascotText = "";
+      let onProceed = null;
 
-        document.getElementById("buy-tile-name").textContent = tile.name;
-        document.getElementById("buy-tile-price").textContent = tile.price;
-        document.getElementById("buy-tile-desc").textContent = desc;
-        document.getElementById("buy-tile-season").textContent = seasonName;
+      if (ownerIdx === undefined) {
+        titleLabel = `🪐 ${tile.name} (미개척 행성)`;
+        msg = `아직 주인이 없는 새로운 별자리 행성입니다. 이 별자리를 개척하시겠습니까? (설립 비용: ✨${tile.price} 별가루)`;
+        mascotText = `🪐 새로운 별자리 ${tile.name}를 발견했어! 별자리 소개를 다 읽고 개척 여부를 결정해봐!`;
         
-        const canvas = document.getElementById("buy-tile-canvas");
-        if (canvas) this.drawLargeConstellation(canvas, tile.id);
-        
-        if (this.canLocalPlayerControl()) {
-          document.getElementById("marble-card-buy").style.display = "flex";
-          MascotController.setBubbleTextOnly(`🪐 새로운 별자리 ${tile.name}를 발견했어! 별가루를 지불해 개척하거나 퀴즈를 맞추어봐!`);
-        } else {
-          document.getElementById("marble-card-buy").style.display = "none";
-          MascotController.setBubbleTextOnly(`🪐 ${activePlayer.name}의 ${tile.name} 개척 결정을 대기하고 있습니다.`);
-        }
+        onProceed = () => {
+          document.getElementById("marble-card-info").style.display = "none";
+          
+          // Setup and open buy screen card
+          document.getElementById("buy-tile-name").textContent = tile.name;
+          document.getElementById("buy-tile-price").textContent = tile.price;
+          document.getElementById("buy-tile-desc").textContent = desc;
+          document.getElementById("buy-tile-season").textContent = seasonName;
+          const canvasBuy = document.getElementById("buy-tile-canvas");
+          if (canvasBuy) this.drawLargeConstellation(canvasBuy, tile.id);
+
+          if (MarbleNetwork.isHost) {
+            MarbleNetwork.broadcast({
+              type: "SHOW_BUY_OVERLAY",
+              tileIdx: pos,
+              tileId: tile.id,
+              tileName: tile.name,
+              tilePrice: tile.price,
+              tileDesc: desc,
+              tileSeason: seasonName
+            });
+          }
+
+          if (this.canLocalPlayerControl()) {
+            document.getElementById("marble-card-buy").style.display = "flex";
+            MascotController.setBubbleTextOnly(`🪐 별자리 ${tile.name}를 개척하기 위해 비용을 지불하거나 퀴즈에 도전해봐!`);
+          } else {
+            document.getElementById("marble-card-buy").style.display = "none";
+            MascotController.setBubbleTextOnly(`🪐 ${activePlayer.name}의 ${tile.name} 개척 결정을 대기하고 있습니다.`);
+          }
+        };
       } 
       else if (ownerIdx === this.activePlayerIdx) {
-        const msg = "본인 소유의 별자리 기지입니다. 안전하게 기항합니다.";
-        if (MarbleNetwork.isHost) {
-          MarbleNetwork.broadcast({
-            type: "SHOW_INFO_OVERLAY",
-            tileIdx: pos,
-            tileId: tile.id,
-            tileName: tile.name,
-            tileDesc: desc,
-            tileSeason: seasonName,
-            tileMsg: msg
-          });
-        }
+        titleLabel = `🪐 ${tile.name} (연합 기지)`;
+        msg = "본인 소유의 별자리 기지입니다. 안전하게 기항하여 우주선 점검을 진행합니다.";
+        mascotText = `🪐 연합 모둠의 소유 영토 ${tile.name} 기지에 안전하게 정박했어!`;
         
-        document.getElementById("info-tile-name").textContent = `🪐 ${tile.name} (아군 기지)`;
-        document.getElementById("info-tile-season").textContent = seasonName;
-        document.getElementById("info-tile-desc").textContent = desc;
-        document.getElementById("info-tile-msg").textContent = msg;
-        
-        const canvas = document.getElementById("info-tile-canvas");
-        if (canvas) this.drawLargeConstellation(canvas, tile.id);
-        
-        this.pendingAction = () => {
+        onProceed = () => {
           document.getElementById("marble-card-info").style.display = "none";
           this.endTurn();
         };
-        
-        document.getElementById("marble-card-info").style.display = "flex";
-        MascotController.setBubbleTextOnly(`🪐 본인의 ${tile.name} 기지에 정박했어!`);
-      } 
-      else {
+      } else {
         const owner = this.players[ownerIdx];
         
         if (activePlayer.team !== "Solo" && activePlayer.team === owner.team) {
-          const msg = `같은 연합 모둠인 ${owner.name}의 별자리 기지입니다. 통행료가 면제됩니다!`;
-          if (MarbleNetwork.isHost) {
-            MarbleNetwork.broadcast({
-              type: "SHOW_INFO_OVERLAY",
-              tileIdx: pos,
-              tileId: tile.id,
-              tileName: tile.name,
-              tileDesc: desc,
-              tileSeason: seasonName,
-              tileMsg: msg
-            });
-          }
+          titleLabel = `🪐 ${tile.name} (연합 기지)`;
+          msg = `같은 연합 모둠인 ${owner.name}의 별자리 기지입니다. 통행료가 면제됩니다!`;
+          mascotText = `🪐 연합 모둠의 ${tile.name} 기지에 무사 방문했어!`;
           
-          document.getElementById("info-tile-name").textContent = `🪐 ${tile.name} (연합 기지)`;
-          document.getElementById("info-tile-season").textContent = seasonName;
-          document.getElementById("info-tile-desc").textContent = desc;
-          document.getElementById("info-tile-msg").textContent = msg;
-          
-          const canvas = document.getElementById("info-tile-canvas");
-          if (canvas) this.drawLargeConstellation(canvas, tile.id);
-          
-          this.pendingAction = () => {
+          onProceed = () => {
             document.getElementById("marble-card-info").style.display = "none";
             this.endTurn();
           };
+        } else if (owner.bankrupt) {
+          titleLabel = `🪐 ${tile.name} (중립 구역)`;
+          msg = `이전 영토 소유자 ${owner.name}이(가) 파산하여 무주공산이 된 중립 별자리입니다. 무사히 통과합니다.`;
+          mascotText = `🪐 주인이 없어진 중립 별자리 ${tile.name}를 평화롭게 스쳐 지나갑니다.`;
           
-          document.getElementById("marble-card-info").style.display = "flex";
-          MascotController.setBubbleTextOnly(`🪐 연합 모둠의 ${tile.name} 기지에 무사 방문했어!`);
+          onProceed = () => {
+            document.getElementById("marble-card-info").style.display = "none";
+            this.endTurn();
+          };
         } else {
-          const msg = `상대 탐험대 ${owner.name}의 영토입니다. 통행료 ✨${tile.toll} 별가루를 지불합니다!`;
-          if (MarbleNetwork.isHost) {
-            MarbleNetwork.broadcast({
-              type: "SHOW_INFO_OVERLAY",
-              tileIdx: pos,
-              tileId: tile.id,
-              tileName: tile.name,
-              tileDesc: desc,
-              tileSeason: seasonName,
-              tileMsg: msg
-            });
-          }
+          titleLabel = `🪐 ${tile.name} (상대 기지)`;
+          msg = `상대 탐험대 ${owner.name}의 영토입니다. 통행료 ✨${tile.toll} 별가루를 지불해야 합니다.`;
+          mascotText = `🛸 상대의 ${tile.name} 영토 기지에 진입했어! 기지 통행료 ✨${tile.toll} 별가루를 지불해야 해.`;
           
-          document.getElementById("info-tile-name").textContent = `🪐 ${tile.name} (상대 기지)`;
-          document.getElementById("info-tile-season").textContent = seasonName;
-          document.getElementById("info-tile-desc").textContent = desc;
-          document.getElementById("info-tile-msg").textContent = msg;
-          
-          const canvas = document.getElementById("info-tile-canvas");
-          if (canvas) this.drawLargeConstellation(canvas, tile.id);
-          
-          this.pendingAction = () => {
+          onProceed = () => {
             document.getElementById("marble-card-info").style.display = "none";
             this.payToll(activePlayer, owner, tile.toll);
             this.endTurn();
           };
-          
-          document.getElementById("marble-card-info").style.display = "flex";
-          MascotController.setBubbleTextOnly(`🛸 상대의 ${tile.name} 기지에 진입했어! 영토 통행료를 상호 지불해야 해.`);
         }
       }
+
+      // Display the common educational info overlay for ALL players
+      if (MarbleNetwork.isHost) {
+        MarbleNetwork.broadcast({
+          type: "SHOW_INFO_OVERLAY",
+          tileIdx: pos,
+          tileId: tile.id,
+          tileName: tile.name,
+          tileDesc: desc,
+          tileSeason: seasonName,
+          tileMsg: msg,
+          titleLabel: titleLabel
+        });
+      }
+
+      document.getElementById("info-tile-name").textContent = titleLabel;
+      document.getElementById("info-tile-season").textContent = seasonName;
+      document.getElementById("info-tile-desc").textContent = desc;
+      document.getElementById("info-tile-msg").textContent = msg;
+
+      const canvas = document.getElementById("info-tile-canvas");
+      if (canvas) this.drawLargeConstellation(canvas, tile.id);
+
+      this.pendingAction = onProceed;
+
+      document.getElementById("marble-card-info").style.display = "flex";
+      MascotController.setBubbleTextOnly(mascotText);
     }
   },
 
