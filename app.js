@@ -1427,6 +1427,7 @@ const SearchGameModule = {
   foundCount: 0,
   currentSeason: "spring",
   sightSize: 160,
+  isTransitioning: false,
 
   init() {
     this.ctx = this.canvas.getContext("2d");
@@ -1537,6 +1538,7 @@ const SearchGameModule = {
 
   startGame() {
     this.foundCount = 0;
+    this.isTransitioning = false;
     document.getElementById("search-result-overlay").style.display = "none";
     document.getElementById("search-left-count").textContent = `0 / 16`;
 
@@ -1655,6 +1657,8 @@ const SearchGameModule = {
   },
 
   checkTargetHit(x, y) {
+    if (this.isTransitioning) return;
+
     if (this.currentSeason !== this.currentTarget.season) {
       SoundEffects.playWrong();
       const targetLabel = { spring: "봄하늘", summer: "여름하늘", autumn: "가을하늘", winter: "겨울하늘" }[this.currentTarget.season];
@@ -1672,6 +1676,7 @@ const SearchGameModule = {
 
     const allowedDistance = Math.max(120, this.sightSize * 0.9);
     if (distance < allowedDistance) {
+      this.isTransitioning = true;
       targetMap.found = true;
       this.foundCount++;
       
@@ -1687,8 +1692,13 @@ const SearchGameModule = {
 
       MascotController.speak(`대단해! ${this.currentTarget.nameKo}를 완벽하게 포착했어. ${this.currentTarget.story}`);
       
-      this.selectNextTarget();
-      this.render();
+      this.render(); // Render immediately so they see the bright glowing constellation!
+      
+      setTimeout(() => {
+        this.isTransitioning = false;
+        this.selectNextTarget();
+        this.render();
+      }, 2000);
     } else {
       SoundEffects.playWrong();
       MascotController.setBubbleTextOnly("망원경 초점 안에 아무것도 보이지 않아. 밤하늘 레이더나 길잡이 힌트를 읽고 다시 조준해볼까?");
