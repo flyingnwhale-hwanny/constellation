@@ -303,6 +303,15 @@
               <p id="search-clue-text">독수리자리는 가장 밝은 별 '알타이르(견우성)'를 품고 있으며, 새가 날개를 펼친 것 같은 십자 날개 모양이에요.</p>
             </div>
 
+            <!-- Telescope Viewfinder Size Control Slider -->
+            <div style="margin: 15px 0; padding: 12px; background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--color-text-secondary);">🔭 망원경 시야 크기:</span>
+                <strong id="telescope-size-value" style="font-size: 13px; color: var(--color-accent);">160px</strong>
+              </div>
+              <input type="range" id="search-sight-size-slider" min="80" max="250" value="160" style="width: 100%; cursor: pointer; accent-color: var(--color-primary);">
+            </div>
+
             <div class="search-progress">
               <span>남은 계절 별자리: <strong id="search-left-count">4/4</strong></span>
               <div class="score-addition" id="search-score-add">+0</div>

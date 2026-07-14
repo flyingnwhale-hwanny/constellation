@@ -1426,6 +1426,7 @@ const SearchGameModule = {
   targetList: [],
   foundCount: 0,
   currentSeason: "spring",
+  sightSize: 160,
 
   init() {
     this.ctx = this.canvas.getContext("2d");
@@ -1505,6 +1506,28 @@ const SearchGameModule = {
         this.updateRadarDot();
       });
     });
+
+    // Telescope size slider binding
+    const slider = document.getElementById("search-sight-size-slider");
+    const valLabel = document.getElementById("telescope-size-value");
+    if (slider && valLabel) {
+      slider.addEventListener("input", (e) => {
+        this.sightSize = parseInt(e.target.value);
+        valLabel.textContent = `${this.sightSize}px`;
+        if (sight) {
+          sight.style.width = `${this.sightSize}px`;
+          sight.style.height = `${this.sightSize}px`;
+        }
+      });
+      
+      // Setup default initial size
+      this.sightSize = parseInt(slider.value);
+      valLabel.textContent = `${this.sightSize}px`;
+      if (sight) {
+        sight.style.width = `${this.sightSize}px`;
+        sight.style.height = `${this.sightSize}px`;
+      }
+    }
   },
 
   onActivate() {
@@ -1517,15 +1540,15 @@ const SearchGameModule = {
     document.getElementById("search-result-overlay").style.display = "none";
     document.getElementById("search-left-count").textContent = `0 / 16`;
 
-    // 1. Build background noise stars for each season
+    // 1. Build background noise stars for each season (brightened default stars)
     this.extraStarsBySeason = { spring: [], summer: [], autumn: [], winter: [] };
     for (const season of ["spring", "summer", "autumn", "winter"]) {
       for (let i = 0; i < 60; i++) {
         this.extraStarsBySeason[season].push({
           x: Math.random() * this.skyWidth,
           y: Math.random() * this.skyHeight,
-          size: Math.random() * 2 + 0.5,
-          alpha: Math.random() * 0.7 + 0.3
+          size: Math.random() * 2 + 0.8,
+          alpha: Math.random() * 0.4 + 0.6
         });
       }
     }
@@ -1647,7 +1670,8 @@ const SearchGameModule = {
     const ty = targetMap.originY + 200;
     const distance = Math.sqrt((tx - x) ** 2 + (ty - y) ** 2);
 
-    if (distance < 150) {
+    const allowedDistance = Math.max(120, this.sightSize * 0.9);
+    if (distance < allowedDistance) {
       targetMap.found = true;
       this.foundCount++;
       
@@ -1747,13 +1771,15 @@ const SearchGameModule = {
             ctx.stroke();
           }
         } else {
-          // Undiscovered stars are faint and dim
-          ctx.fillStyle = star.isBright ? "rgba(255, 255, 255, 0.4)" : "rgba(158, 208, 255, 0.25)";
-          ctx.shadowBlur = 0;
+          // Undiscovered stars are faint but clearly visible (brightened default stars)
+          ctx.fillStyle = star.isBright ? "rgba(255, 255, 255, 0.85)" : "rgba(158, 208, 255, 0.65)";
+          ctx.shadowBlur = star.isBright ? 5 : 2;
+          ctx.shadowColor = "#ffffff";
           
           ctx.beginPath();
-          ctx.arc(ox + star.x, oy + star.y, star.isBright ? 5 : 3.5, 0, Math.PI * 2);
+          ctx.arc(ox + star.x, oy + star.y, star.isBright ? 6.5 : 4.5, 0, Math.PI * 2);
           ctx.fill();
+          ctx.shadowBlur = 0;
         }
       });
 
