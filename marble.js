@@ -178,12 +178,25 @@ const MarbleNetwork = {
       document.getElementById("btn-submit-join").addEventListener("click", () => {
         const nickname = document.getElementById("online-join-nickname").value.trim() || "새 탐험가";
         const selectedIdx = document.getElementById("online-join-slot").selectedIndex;
-        this.joinRoom(roomParam, nickname, selectedIdx);
+        this.send({ type: "JOIN_SUBMIT", nickname: nickname, teamIdx: selectedIdx });
+        
+        document.getElementById("modal-online-join").style.display = "none";
+        AppController.switchView("view-marble-setup");
+        document.getElementById("btn-conn-online").click();
+        document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 우주 연결 완료 (ID: ${this.roomId})`;
+        document.getElementById("btn-create-room").style.display = "none";
       });
       document.getElementById("btn-cancel-join").addEventListener("click", () => {
         document.getElementById("modal-online-join").style.display = "none";
+        if (this.peer) {
+          this.peer.destroy();
+          this.peer = null;
+        }
         window.history.replaceState({}, document.title, window.location.pathname);
       });
+      
+      // Start background connection immediately
+      this.joinRoom(roomParam);
     }
 
     document.getElementById("btn-conn-local").addEventListener("click", () => {
@@ -324,10 +337,16 @@ const MarbleNetwork = {
     });
   },
 
-  joinRoom(roomId, nickname, selectedIdx) {
+  joinRoom(roomId) {
     this.isHost = false;
     this.roomId = roomId;
     document.getElementById("online-status-text").textContent = "은하 접속 중...";
+    
+    // Show connection loading state in join modal
+    const loadingEl = document.getElementById("join-conn-loading");
+    const formEl = document.getElementById("join-form-wrapper");
+    if (loadingEl) loadingEl.style.display = "block";
+    if (formEl) formEl.style.display = "none";
     
     try {
       this.peer = new Peer({
@@ -345,15 +364,7 @@ const MarbleNetwork = {
       this.conn = this.peer.connect(targetId);
       
       this.conn.on("open", () => {
-        document.getElementById("modal-online-join").style.display = "none";
-        AppController.switchView("view-marble-setup");
-        
-        document.getElementById("btn-conn-online").click();
-        document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 우주 연결 완료 (ID: ${this.roomId})`;
-        document.getElementById("btn-create-room").style.display = "none";
-        
-        // Submit join
-        this.send({ type: "JOIN_SUBMIT", nickname: nickname, teamIdx: selectedIdx });
+        // Connected! Wait for CONNECT_ACK from host to show form
       });
 
       this.conn.on("data", (data) => {
@@ -500,6 +511,12 @@ const MarbleNetwork = {
         
         MarbleGameModule.isSoloMode = data.isSoloMode;
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
+
+        // Show guest join input form and hide loading banner
+        const loadingEl = document.getElementById("join-conn-loading");
+        const formEl = document.getElementById("join-form-wrapper");
+        if (loadingEl) loadingEl.style.display = "none";
+        if (formEl) formEl.style.display = "block";
       }
       else if (data.type === "SYNC_PLAYERS") {
         this.activePlayersList = data.list;
