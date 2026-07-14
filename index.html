@@ -391,9 +391,10 @@
             </div>
             <div class="setup-row" id="setup-online-actions" style="display: none;">
               <label>방 개설 및 공유:</label>
-              <div class="online-setup-buttons" style="display: flex; gap: 8px;">
+              <div class="online-setup-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button class="btn-primary btn-small" id="btn-create-room">방 만들기 🔑</button>
                 <button class="btn-accent btn-small" id="btn-copy-link" style="display: none;">초대 링크 복사 🔗</button>
+                <button class="btn-setup-opt btn-small" id="btn-show-qr" style="display: none; padding: 6px 12px; font-size: 13px;">초대 QR코드 📱</button>
               </div>
             </div>
             <div class="online-status-banner" id="online-status-banner" style="display: none; width: 100%; text-align: center; padding: 8px; border-radius: 8px; background: rgba(0,230,118,0.06); border: 1px dashed var(--color-accent); font-size: 13px; color: var(--color-accent);">
@@ -854,6 +855,24 @@
       <div class="setup-footer" style="display: flex; justify-content: center; margin-top: 12px;">
         <button class="btn-secondary" id="btn-cancel-join" style="padding: 8px 20px; font-size: 13px;">취소</button>
       </div>
+    </div>
+  </div>
+
+  <!-- POPUP 4: QR CODE INVITATION MODAL -->
+  <div class="modal-backdrop" id="modal-qr-invite" style="display: none;">
+    <div class="cabinet-card glass-panel" style="max-width: 360px; padding: 24px; text-align: center;">
+      <h2 style="margin-bottom: 8px; color: var(--color-accent);">📱 QR 코드로 초대</h2>
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 20px;">스마트 기기 카메라로 아래 QR 코드를 스캔하여 빠르게 우주선에 탑승하세요!</p>
+      
+      <div style="background: white; padding: 16px; border-radius: 12px; display: inline-block; box-shadow: 0 0 20px rgba(0, 230, 118, 0.2); margin-bottom: 16px;">
+        <img id="qr-invite-image" src="" alt="QR Code" style="width: 200px; height: 200px; display: block;">
+      </div>
+      
+      <div style="font-size: 12px; word-break: break-all; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 20px; color: var(--color-text-secondary);" id="qr-invite-link-text">
+        우주선 초대 링크 주소
+      </div>
+      
+      <button class="btn-primary" id="btn-close-qr-modal" style="width: 100%;">우주로 돌아가기</button>
     </div>
   </div>
 

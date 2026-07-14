@@ -225,6 +225,19 @@ const MarbleNetwork = {
         alert("직접 링크를 복사해서 전송하세요:\n" + inviteLink);
       });
     });
+
+    document.getElementById("btn-show-qr").addEventListener("click", () => {
+      const inviteLink = window.location.origin + window.location.pathname + "?room=" + this.roomId;
+      const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(inviteLink);
+      
+      document.getElementById("qr-invite-image").src = qrUrl;
+      document.getElementById("qr-invite-link-text").textContent = inviteLink;
+      document.getElementById("modal-qr-invite").style.display = "flex";
+    });
+
+    document.getElementById("btn-close-qr-modal").addEventListener("click", () => {
+      document.getElementById("modal-qr-invite").style.display = "none";
+    });
   },
 
   createRoom() {
@@ -259,6 +272,7 @@ const MarbleNetwork = {
       }
       document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 온라인 대기 중 (방 코드: <strong>${this.roomId}</strong>)`;
       document.getElementById("btn-copy-link").style.display = "inline-block";
+      document.getElementById("btn-show-qr").style.display = "inline-block";
       document.getElementById("btn-create-room").style.display = "none";
       
       const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSoloMode ? "참가자 1" : "홍팀");
@@ -305,6 +319,7 @@ const MarbleNetwork = {
             this.roomId = id;
             document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 온라인 대기 중 (방 코드: <strong>${this.roomId}</strong>)`;
             document.getElementById("btn-copy-link").style.display = "inline-block";
+            document.getElementById("btn-show-qr").style.display = "inline-block";
             document.getElementById("btn-create-room").style.display = "none";
             const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSoloMode ? "참가자 1" : "홍팀");
             this.activePlayersList = [{ id: 0, name: hostName, isHost: true, peerId: id, teamIdx: 0 }];
