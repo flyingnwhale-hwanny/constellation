@@ -1705,8 +1705,11 @@ const SearchGameModule = {
       const ox = element.originX;
       const oy = element.originY;
 
+      // Draw lines if already discovered, otherwise hidden
       if (element.found) {
-        ctx.strokeStyle = "rgba(0, 230, 118, 0.4)";
+        ctx.strokeStyle = "rgba(0, 230, 118, 0.8)";
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(0, 230, 118, 0.6)";
         ctx.lineWidth = 2.5;
         item.connections.forEach(line => {
           const p1 = item.stars[line[0]];
@@ -1716,35 +1719,53 @@ const SearchGameModule = {
           ctx.lineTo(ox + p2.x, oy + p2.y);
           ctx.stroke();
         });
+        ctx.shadowBlur = 0; // Reset after drawing lines
       }
 
+      // Draw stars
       item.stars.forEach(star => {
-        ctx.fillStyle = star.isBright ? "#ffffff" : "#9ed0ff";
-        ctx.shadowBlur = star.isBright ? 8 : 4;
-        ctx.shadowColor = "#ffffff";
-        
-        ctx.beginPath();
-        ctx.arc(ox + star.x, oy + star.y, star.isBright ? (element.found ? 9 : 7) : (element.found ? 6 : 4.5), 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        if (star.isBright && element.found) {
-          ctx.strokeStyle = "rgba(255,255,255,0.6)";
-          ctx.lineWidth = 1.2;
+        if (element.found) {
+          // Discovered stars shine extremely brightly
+          ctx.fillStyle = star.isBright ? "#ffea00" : "#ffffff";
+          ctx.shadowBlur = star.isBright ? 15 : 8;
+          ctx.shadowColor = star.isBright ? "#ffea00" : "#ffffff";
+          
           ctx.beginPath();
-          ctx.moveTo(ox + star.x - 12, oy + star.y);
-          ctx.lineTo(ox + star.x + 12, oy + star.y);
-          ctx.moveTo(ox + star.x, oy + star.y - 12);
-          ctx.lineTo(ox + star.x, oy + star.y + 12);
-          ctx.stroke();
+          ctx.arc(ox + star.x, oy + star.y, star.isBright ? 9 : 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0; // Reset
+
+          // Draw cross flare for bright stars
+          if (star.isBright) {
+            ctx.strokeStyle = "rgba(255, 234, 0, 0.8)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(ox + star.x - 14, oy + star.y);
+            ctx.lineTo(ox + star.x + 14, oy + star.y);
+            ctx.moveTo(ox + star.x, oy + star.y - 14);
+            ctx.lineTo(ox + star.x, oy + star.y + 14);
+            ctx.stroke();
+          }
+        } else {
+          // Undiscovered stars are faint and dim
+          ctx.fillStyle = star.isBright ? "rgba(255, 255, 255, 0.4)" : "rgba(158, 208, 255, 0.25)";
+          ctx.shadowBlur = 0;
+          
+          ctx.beginPath();
+          ctx.arc(ox + star.x, oy + star.y, star.isBright ? 5 : 3.5, 0, Math.PI * 2);
+          ctx.fill();
         }
       });
 
+      // Write names if found
       if (element.found) {
         ctx.fillStyle = "#ffd05b";
-        ctx.font = "bold 14px Noto Sans KR";
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = "#ffd05b";
+        ctx.font = "bold 15px Noto Sans KR";
         ctx.textAlign = "center";
         ctx.fillText(item.nameKo, ox + 200, oy + 80);
+        ctx.shadowBlur = 0;
       }
     });
 
