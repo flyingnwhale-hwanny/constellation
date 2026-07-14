@@ -54,7 +54,7 @@
       <section id="view-lobby" class="app-view active">
         <div class="lobby-welcome">
           <h2>밤하늘의 비밀을 풀 준비가 되었나요?</h2>
-          <p>네 가지 특별한 모드로 16개의 아름다운 대표 별자리들을 마스터해보세요!</p>
+          <p>다섯 가지 특별한 모드로 16개의 아름다운 대표 별자리들을 마스터해보세요!</p>
         </div>
         <div class="lobby-grid">
           <!-- Card 1: Library -->
@@ -136,9 +136,6 @@
                 <p id="lib-shape-desc">머리 부분은 낫(물음표 뒤집은 모양)과 같고, 꼬리는 세모 형태를 이룬 사자의 모습이에요.</p>
                 <h4>재미있는 이야기</h4>
                 <p id="lib-story-desc">헤라클레스가 첫 번째 모험에서 물리친 무적의 네메아 골짜기 사자가 제우스에 의해 별자리가 되었습니다.</p>
-              </div>
-              <div class="info-footer">
-                <button class="btn-audio" id="btn-lib-speak">🔊 목소리로 듣기</button>
               </div>
             </div>
           </div>
@@ -276,10 +273,18 @@
 
       <!-- VIEW 5: SKY SEARCH GAME -->
       <section id="view-search" class="app-view">
-        <div class="view-header">
+        <div class="view-header" style="flex-wrap: wrap; gap: 10px;">
           <button class="btn-back" id="btn-search-back">← 메인화면</button>
           <h2>🔭 밤하늘 탐험</h2>
           <div class="search-instructions">목표 별자리: <strong id="search-target-text" class="highlight">독수리자리</strong>를 밤하늘에서 찾으세요!</div>
+          
+          <!-- Season Navigation Tabs for separating space -->
+          <div class="search-season-tabs" style="display: flex; gap: 8px; margin-left: auto;">
+            <button class="btn-setup-opt search-season-btn active" data-season="spring">봄하늘 🌸</button>
+            <button class="btn-setup-opt search-season-btn" data-season="summer">여름하늘 ☀️</button>
+            <button class="btn-setup-opt search-season-btn" data-season="autumn">가을하늘 🍁</button>
+            <button class="btn-setup-opt search-season-btn" data-season="winter">겨울하늘 ❄️</button>
+          </div>
         </div>
 
         <div class="search-game-container">

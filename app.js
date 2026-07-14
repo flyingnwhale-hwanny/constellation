@@ -716,14 +716,6 @@ const LibraryModule = {
       });
     });
 
-    // Speak description event
-    document.getElementById("btn-lib-speak").addEventListener("click", () => {
-      const activeItem = this.getActiveConstellation();
-      if (activeItem) {
-        MascotController.speak(`${activeItem.nameKo} 이야기. ${activeItem.story}`);
-        SoundEffects.playSparkle();
-      }
-    });
   },
 
   onActivate() {
@@ -1428,11 +1420,12 @@ const SearchGameModule = {
   wasDragging: false,
   dragStartMouse: { x: 0, y: 0 },
   dragStartOffset: { x: 0, y: 0 },
-  pannedSkyElements: [], // Position mappings of active constellations in the sky field
-  extraStars: [],
+  pannedSkyElementsBySeason: { spring: [], summer: [], autumn: [], winter: [] },
+  extraStarsBySeason: { spring: [], summer: [], autumn: [], winter: [] },
   currentTarget: null,
   targetList: [],
   foundCount: 0,
+  currentSeason: "spring",
 
   init() {
     this.ctx = this.canvas.getContext("2d");
@@ -1483,14 +1476,12 @@ const SearchGameModule = {
 
     // Check hit click on telescope sight center
     container.addEventListener("click", (e) => {
-      // If we were dragging the view, do not count as a target click
       if (this.wasDragging) {
         this.wasDragging = false;
         return;
       }
       
       const rect = container.getBoundingClientRect();
-      // Absolute coordinate in 1200x900 coordinate space:
       const clickX = (e.clientX - rect.left) + this.panningOffset.x;
       const clickY = (e.clientY - rect.top) + this.panningOffset.y;
 
@@ -1504,64 +1495,79 @@ const SearchGameModule = {
     document.getElementById("btn-search-lobby").addEventListener("click", () => {
       AppController.switchView("view-lobby");
     });
+
+    // Season tab selectors
+    document.querySelectorAll(".search-season-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.currentSeason = btn.getAttribute("data-season");
+        this.updateSeasonTabsUI();
+        this.render();
+        this.updateRadarDot();
+      });
+    });
   },
 
   onActivate() {
     this.startGame();
-    MascotController.speak("밤하늘 탐험 망원경을 정밀 활성화했어! 레이더와 힌트 메시지를 길잡이 삼아 특정 별자리를 찾아 겨냥해봐!");
+    MascotController.speak("밤하늘 탐험 망원경을 정밀 활성화했어! 각 계절 탭을 누르면 해당 계절의 밤하늘로 이동해. 힌트 메시지를 보고 알맞은 계절로 이동해 목표 별자리를 조준해봐!");
   },
 
   startGame() {
     this.foundCount = 0;
     document.getElementById("search-result-overlay").style.display = "none";
-    document.getElementById("search-left-count").textContent = `0 / 4`;
+    document.getElementById("search-left-count").textContent = `0 / 16`;
 
-    // 1. Build random background noise stars
-    this.extraStars = [];
-    for (let i = 0; i < 180; i++) {
-      this.extraStars.push({
-        x: Math.random() * this.skyWidth,
-        y: Math.random() * this.skyHeight,
-        size: Math.random() * 2 + 0.5,
-        alpha: Math.random() * 0.7 + 0.3
-      });
-    }
-
-    // 2. Lay out the 16 constellations across the 1200x900 map randomly without overlapping
-    this.pannedSkyElements = [];
-    
-    // Simple grid layout to guarantee spacing
-    const cols = 4;
-    const rows = 4;
-    const cellW = this.skyWidth / cols;
-    const cellH = this.skyHeight / rows;
-
-    const deck = [...ALL_CONSTELLATIONS];
-    this.shuffle(deck);
-
-    let k = 0;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (k >= deck.length) break;
-        const item = deck[k++];
-        
-        // Random placement offset within cell
-        const offsetX = cellW * c + Math.random() * (cellW - 240) + 20;
-        const offsetY = cellH * r + Math.random() * (cellH - 240) + 20;
-
-        this.pannedSkyElements.push({
-          constellation: item,
-          originX: offsetX,
-          originY: offsetY,
-          found: false
+    // 1. Build background noise stars for each season
+    this.extraStarsBySeason = { spring: [], summer: [], autumn: [], winter: [] };
+    for (const season of ["spring", "summer", "autumn", "winter"]) {
+      for (let i = 0; i < 60; i++) {
+        this.extraStarsBySeason[season].push({
+          x: Math.random() * this.skyWidth,
+          y: Math.random() * this.skyHeight,
+          size: Math.random() * 2 + 0.5,
+          alpha: Math.random() * 0.7 + 0.3
         });
       }
     }
 
+    // 2. Lay out 4 constellations per season in a 2x2 grid
+    this.pannedSkyElementsBySeason = { spring: [], summer: [], autumn: [], winter: [] };
+    const cols = 2;
+    const rows = 2;
+    const cellW = this.skyWidth / cols;
+    const cellH = this.skyHeight / rows;
+
+    for (const season of ["spring", "summer", "autumn", "winter"]) {
+      const deck = [...CONSTELLATION_DB[season]];
+      this.shuffle(deck);
+
+      let k = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (k >= deck.length) break;
+          const item = deck[k++];
+
+          // Random placement offset within cell
+          const offsetX = cellW * c + Math.random() * (cellW - 320) + 40;
+          const offsetY = cellH * r + Math.random() * (cellH - 320) + 40;
+
+          this.pannedSkyElementsBySeason[season].push({
+            constellation: item,
+            originX: offsetX,
+            originY: offsetY,
+            found: false
+          });
+        }
+      }
+    }
+
     // Build target queue
-    this.targetList = [...ALL_CONSTELLATIONS];
+    this.targetList = [];
+    for (const season in CONSTELLATION_DB) {
+      this.targetList.push(...CONSTELLATION_DB[season]);
+    }
     this.shuffle(this.targetList);
-    
+
     this.selectNextTarget();
     this.render();
   },
@@ -1573,6 +1579,16 @@ const SearchGameModule = {
     }
   },
 
+  updateSeasonTabsUI() {
+    document.querySelectorAll(".search-season-btn").forEach(btn => {
+      if (btn.getAttribute("data-season") === this.currentSeason) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  },
+
   selectNextTarget() {
     if (this.targetList.length === 0) {
       this.endGame();
@@ -1581,44 +1597,59 @@ const SearchGameModule = {
 
     this.currentTarget = this.targetList.pop();
     document.getElementById("search-target-text").textContent = this.currentTarget.nameKo;
-    document.getElementById("search-clue-text").textContent = `[힌트]가장 밝은 별: ${this.currentTarget.brightStar}. ${this.currentTarget.shapeDesc}`;
 
-    // Position radar dot relative to the target constellation coordinates
-    const targetMap = this.pannedSkyElements.find(el => el.constellation.id === this.currentTarget.id);
-    if (targetMap) {
-      // Calculate normalized coordinates on radar (radar-box size is 240x240 inside css)
-      const radarDot = document.getElementById("radar-hint-dot");
-      radarDot.style.display = "block";
-      // Target center roughly origin + 200
-      const targetCenterX = targetMap.originX + 200;
-      const targetCenterY = targetMap.originY + 200;
+    // Auto switch season tab to target's season!
+    this.currentSeason = this.currentTarget.season;
+    this.updateSeasonTabsUI();
 
-      radarDot.style.left = `${(targetCenterX / this.skyWidth) * 100}%`;
-      radarDot.style.top = `${(targetCenterY / this.skyHeight) * 100}%`;
-    }
+    const labelSeason = { spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" }[this.currentTarget.season];
+    document.getElementById("search-clue-text").textContent = `[계절] ${labelSeason}철 별자리\n[길잡이 별] ${this.currentTarget.brightStar}\n[모양] ${this.currentTarget.shapeDesc}`;
 
+    this.updateRadarDot();
     document.getElementById("search-left-count").textContent = `${this.foundCount} / 16`;
   },
 
+  updateRadarDot() {
+    const activeSkyElements = this.pannedSkyElementsBySeason[this.currentTarget.season];
+    const targetMap = activeSkyElements.find(el => el.constellation.id === this.currentTarget.id);
+    const radarDot = document.getElementById("radar-hint-dot");
+    
+    if (targetMap && radarDot) {
+      if (this.currentSeason === this.currentTarget.season) {
+        radarDot.style.display = "block";
+        const targetCenterX = targetMap.originX + 200;
+        const targetCenterY = targetMap.originY + 200;
+        radarDot.style.left = `${(targetCenterX / this.skyWidth) * 100}%`;
+        radarDot.style.top = `${(targetCenterY / this.skyHeight) * 100}%`;
+      } else {
+        radarDot.style.display = "none";
+      }
+    }
+  },
+
   checkTargetHit(x, y) {
-    // Check if clicked close to target center
-    const targetMap = this.pannedSkyElements.find(el => el.constellation.id === this.currentTarget.id);
+    if (this.currentSeason !== this.currentTarget.season) {
+      SoundEffects.playWrong();
+      const targetLabel = { spring: "봄하늘", summer: "여름하늘", autumn: "가을하늘", winter: "겨울하늘" }[this.currentTarget.season];
+      MascotController.setBubbleTextOnly(`이곳은 ${targetLabel}에 속하지 않아요! 길잡이 힌트를 읽고 [${targetLabel}] 탭으로 먼저 이동해 별자리를 찾으세요.`);
+      return;
+    }
+
+    const activeElements = this.pannedSkyElementsBySeason[this.currentSeason];
+    const targetMap = activeElements.find(el => el.constellation.id === this.currentTarget.id);
     if (!targetMap) return;
 
-    // Target center is origin + 200 (scale offset)
     const tx = targetMap.originX + 200;
     const ty = targetMap.originY + 200;
     const distance = Math.sqrt((tx - x) ** 2 + (ty - y) ** 2);
 
     if (distance < 150) {
-      // Target discovered!
       targetMap.found = true;
       this.foundCount++;
       
       SoundEffects.playSuccess();
       GameState.addScore(40);
 
-      // Trigger visual popup animation in left panel
       const addEl = document.getElementById("search-score-add");
       addEl.textContent = `+40 점!`;
       addEl.className = "score-addition pop";
@@ -1651,25 +1682,25 @@ const SearchGameModule = {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.skyWidth, this.skyHeight);
 
-    // Apply viewport panning offset
     ctx.save();
     ctx.translate(-this.panningOffset.x, -this.panningOffset.y);
 
-    // 1. Draw cosmic background noise stars
-    this.extraStars.forEach(star => {
+    // 1. Draw cosmic background noise stars for current season
+    const extraStars = this.extraStarsBySeason[this.currentSeason] || [];
+    extraStars.forEach(star => {
       ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
       ctx.beginPath();
       ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // 2. Draw all mapped constellations
-    this.pannedSkyElements.forEach(element => {
+    // 2. Draw active season's mapped constellations
+    const activeElements = this.pannedSkyElementsBySeason[this.currentSeason] || [];
+    activeElements.forEach(element => {
       const item = element.constellation;
       const ox = element.originX;
       const oy = element.originY;
 
-      // Draw faint lines if already discovered, otherwise hidden
       if (element.found) {
         ctx.strokeStyle = "rgba(0, 230, 118, 0.4)";
         ctx.lineWidth = 2.5;
@@ -1683,14 +1714,12 @@ const SearchGameModule = {
         });
       }
 
-      // Draw stars
       item.stars.forEach(star => {
         ctx.fillStyle = star.isBright ? "#ffffff" : "#9ed0ff";
         ctx.shadowBlur = star.isBright ? 8 : 4;
         ctx.shadowColor = "#ffffff";
         
         ctx.beginPath();
-        // Discovered constellations glow brighter
         ctx.arc(ox + star.x, oy + star.y, star.isBright ? (element.found ? 9 : 7) : (element.found ? 6 : 4.5), 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -1707,7 +1736,6 @@ const SearchGameModule = {
         }
       });
 
-      // Write names if found
       if (element.found) {
         ctx.fillStyle = "#ffd05b";
         ctx.font = "bold 14px Noto Sans KR";
@@ -1718,10 +1746,6 @@ const SearchGameModule = {
 
     ctx.restore();
 
-    // Map viewport boundary scroll indicator positions inside camera
-    const canvasContainer = document.getElementById("sky-drag-container");
-    const rect = canvasContainer.getBoundingClientRect();
-    // Scroll container mapping translated coordinates on screen
     const rawCanvas = document.getElementById("search-sky-canvas");
     rawCanvas.style.transform = `translate(${-this.panningOffset.x}px, ${-this.panningOffset.y}px)`;
   }
