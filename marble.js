@@ -1403,6 +1403,9 @@ const MarbleGameModule = {
       MascotController.setBubbleTextOnly("☄️ 엄청난 속도의 유성우 가속을 받았어! 주사위를 한 번 더 던져보자!");
       this.syncStateWithClients();
     } 
+    else if (tile.type === "chance") {
+      this.drawChanceCard();
+    }
     else if (tile.type === "constellation") {
       const ownerIdx = this.tileOwners[pos];
       const desc = this.getConstellationDesc(tile.id);
@@ -1520,6 +1523,96 @@ const MarbleGameModule = {
       document.getElementById("marble-card-info").style.display = "flex";
       MascotController.setBubbleTextOnly(mascotText);
     }
+  },
+
+  drawChanceCard() {
+    const activePlayer = this.players[this.activePlayerIdx];
+    const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+    
+    this.log(`${activePlayer.name}이(가) 황금열쇠 칸에 정박하여 카드를 뽑았습니다: [${card.title}]`, "highlight-event");
+
+    // Execute effect immediately
+    if (card.id === "exemption") {
+      activePlayer.exemptTickets++;
+      this.log(`${activePlayer.name} 탐험대가 [우주 통행세 면제권]을 확보했습니다!`, "highlight-event");
+    } 
+    else if (card.id === "donation") {
+      const amount = Math.min(activePlayer.dust, 50);
+      activePlayer.dust -= amount;
+      this.log(`${activePlayer.name} 탐험대가 우주 기부단에 별가루 ✨${amount}를 기부했습니다.`, "highlight-pay");
+    } 
+    else if (card.id === "escape") {
+      activePlayer.escapeTickets++;
+      this.log(`${activePlayer.name} 탐험대가 [블랙홀 탈출 연료]를 충전했습니다!`, "highlight-event");
+    } 
+    else if (card.id === "lottery") {
+      activePlayer.dust += 150;
+      this.log(`${activePlayer.name} 탐험대가 보너스 별가루 ✨150에 당첨되었습니다!`, "highlight-event");
+    } 
+    else if (card.id === "repair") {
+      const amount = Math.min(activePlayer.dust, 70);
+      activePlayer.dust -= amount;
+      this.log(`${activePlayer.name} 탐험대가 우주선 정비 기술료로 별가루 ✨${amount}를 납부했습니다.`, "highlight-pay");
+    } 
+    else if (card.id === "warp") {
+      activePlayer.position = 6; // Move to Space Station (Tile 6)
+      this.log(`${activePlayer.name} 탐험대가 웜홀 중력장에 빨려 들어가 우주정거장(Tile 6)으로 도약했습니다!`, "highlight-event");
+    } 
+    else if (card.id === "abundance") {
+      this.players.forEach(p => {
+        if (p.id !== activePlayer.id && !p.bankrupt) {
+          const amount = Math.min(p.dust, 30);
+          p.dust -= amount;
+          activePlayer.dust += amount;
+          this.log(`${p.name} 탐험대가 ${activePlayer.name} 탐험대에 개척 투자금 ✨${amount} 별가루를 전달했습니다.`);
+        }
+      });
+    } 
+    else if (card.id === "free_claim") {
+      let targetTileIdx = -1;
+      for (let i = 0; i < MARBLE_BOARD_TILES.length; i++) {
+        const tileIdx = (activePlayer.position + i) % MARBLE_BOARD_TILES.length;
+        const t = MARBLE_BOARD_TILES[tileIdx];
+        if (t.type === "constellation" && this.tileOwners[tileIdx] === undefined) {
+          targetTileIdx = tileIdx;
+          break;
+        }
+      }
+      if (targetTileIdx !== -1) {
+        this.tileOwners[targetTileIdx] = this.activePlayerIdx;
+        const tileEl = document.getElementById(`tile-${targetTileIdx}`);
+        if (tileEl) {
+          tileEl.classList.add(`owned-p${this.activePlayerIdx}`);
+        }
+        const claimedTile = MARBLE_BOARD_TILES[targetTileIdx];
+        this.log(`무료 개척: ${activePlayer.name}이(가) 미개척 행성 [${claimedTile.name}]을 무료로 등기했습니다!`, "highlight-event");
+      } else {
+        activePlayer.dust += 100;
+        this.log(`개척할 빈 별자리가 없어 보상금으로 별가루 +100을 지급받았습니다.`, "highlight-event");
+      }
+    }
+
+    // Broadcast overlay to clients
+    if (MarbleNetwork.isHost) {
+      MarbleNetwork.broadcast({
+        type: "SHOW_CHANCE_OVERLAY",
+        title: card.title,
+        desc: card.desc
+      });
+    }
+
+    document.getElementById("chance-card-title").textContent = card.title;
+    document.getElementById("chance-card-desc").textContent = card.desc;
+    document.getElementById("marble-card-chance").style.display = "flex";
+    MascotController.setBubbleTextOnly(`🔑 황금열쇠 카드 발견: ${card.title}`);
+
+    this.pendingAction = () => {
+      document.getElementById("marble-card-chance").style.display = "none";
+      this.updateStatsUI();
+      this.updateTokensUI();
+      this.syncStateWithClients();
+      this.endTurn();
+    };
   },
 
   payToll(payer, owner, amount) {
