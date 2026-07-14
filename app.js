@@ -1646,8 +1646,19 @@ const SearchGameModule = {
     if (targetMap && radarDot) {
       if (this.currentSeason === this.currentTarget.season) {
         radarDot.style.display = "block";
-        const targetCenterX = targetMap.originX + 200;
-        const targetCenterY = targetMap.originY + 200;
+        
+        // Calculate true centroid of the constellation stars
+        const item = targetMap.constellation;
+        let sumX = 0, sumY = 0;
+        item.stars.forEach(s => {
+          sumX += s.x;
+          sumY += s.y;
+        });
+        const centerX = sumX / item.stars.length;
+        const centerY = sumY / item.stars.length;
+
+        const targetCenterX = targetMap.originX + centerX;
+        const targetCenterY = targetMap.originY + centerY;
         radarDot.style.left = `${(targetCenterX / this.skyWidth) * 100}%`;
         radarDot.style.top = `${(targetCenterY / this.skyHeight) * 100}%`;
       } else {
@@ -1688,9 +1699,18 @@ const SearchGameModule = {
     const insideRatio = starsInside / item.stars.length;
     const is70PercentInside = insideRatio >= 0.7;
 
+    // Calculate true centroid of the constellation stars
+    let sumX = 0, sumY = 0;
+    item.stars.forEach(s => {
+      sumX += s.x;
+      sumY += s.y;
+    });
+    const centerX = sumX / item.stars.length;
+    const centerY = sumY / item.stars.length;
+
     // Check 2: Center distance check (fallback for small constellations or close centering)
-    const tx = ox + 200;
-    const ty = oy + 200;
+    const tx = ox + centerX;
+    const ty = oy + centerY;
     const centerDistance = Math.sqrt((tx - x) ** 2 + (ty - y) ** 2);
     const allowedDistance = Math.max(120, this.sightSize * 0.9);
     const isCenterClose = centerDistance < allowedDistance;
@@ -1815,12 +1835,21 @@ const SearchGameModule = {
 
       // Write names if found
       if (element.found) {
+        // Calculate true centroid for label placement
+        let sumX = 0, sumY = 0;
+        item.stars.forEach(s => {
+          sumX += s.x;
+          sumY += s.y;
+        });
+        const centerX = sumX / item.stars.length;
+        const centerY = sumY / item.stars.length;
+
         ctx.fillStyle = "#ffd05b";
         ctx.shadowBlur = 5;
         ctx.shadowColor = "#ffd05b";
         ctx.font = "bold 15px Noto Sans KR";
         ctx.textAlign = "center";
-        ctx.fillText(item.nameKo, ox + 200, oy + 80);
+        ctx.fillText(item.nameKo, ox + centerX, oy + centerY - 45); // Label beautifully centered above centroid
         ctx.shadowBlur = 0;
       }
     });
