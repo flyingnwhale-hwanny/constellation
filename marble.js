@@ -1133,7 +1133,11 @@ const MarbleGameModule = {
       container.appendChild(card);
     });
 
-    document.getElementById("marble-turns-left").textContent = `${this.currentTurnCount} / ${this.maxTurnsLimit} 턴`;
+    if (this.maxTurnsLimit === 999) {
+      document.getElementById("marble-turns-left").textContent = `${this.currentTurnCount} 턴 (제한 없음)`;
+    } else {
+      document.getElementById("marble-turns-left").textContent = `${this.currentTurnCount} / ${this.maxTurnsLimit} 턴`;
+    }
   },
 
   updateTokensUI() {
