@@ -224,18 +224,14 @@ const MarbleNetwork = {
     // Explicit primary secure PeerJS cloud configuration
     try {
       this.peer = new Peer(peerId, {
-        host: "peerjs.com",
-        port: 443,
-        secure: true,
+        key: "peerjs",
         debug: 3
       });
     } catch (e) {
       console.error("PeerJS custom ID initialization failed, falling back...", e);
       try {
         this.peer = new Peer({
-          host: "peerjs.com",
-          port: 443,
-          secure: true,
+          key: "peerjs",
           debug: 3
         });
       } catch (err) {
@@ -289,9 +285,7 @@ const MarbleNetwork = {
         this.peer.destroy();
         try {
           this.peer = new Peer({
-            host: "peerjs.com",
-            port: 443,
-            secure: true,
+            key: "peerjs",
             debug: 3
           });
           this.peer.on("open", (id) => {
@@ -337,9 +331,7 @@ const MarbleNetwork = {
     
     try {
       this.peer = new Peer({
-        host: "peerjs.com",
-        port: 443,
-        secure: true,
+        key: "peerjs",
         debug: 3
       });
     } catch (e) {
