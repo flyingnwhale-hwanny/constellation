@@ -272,6 +272,14 @@ const MarbleNetwork = {
     const peerId = "constellation-room-" + this.roomId;
     
     document.getElementById("online-status-text").textContent = "접속 서버 연결 중...";
+
+    // Set 8-second connection timeout warning
+    const connectionTimeout = setTimeout(() => {
+      if (this.peer && !this.peer.open && !this.peer.destroyed) {
+        document.getElementById("online-status-text").innerHTML = 
+          `접속 시간이 초과되었습니다.<br><span style="font-size: 11.5px; opacity:0.8;">학교 방화벽에서 실시간 서비스(PeerJS)를 차단했을 가능성이 높습니다.</span>`;
+      }
+    }, 8000);
     
     // Explicit primary secure PeerJS cloud configuration
     try {
@@ -283,6 +291,7 @@ const MarbleNetwork = {
         debug: 3
       });
     } catch (e) {
+      clearTimeout(connectionTimeout);
       console.error("PeerJS custom ID initialization failed, falling back...", e);
       try {
         this.peer = new Peer({
@@ -299,6 +308,7 @@ const MarbleNetwork = {
     }
     
     this.peer.on("open", (id) => {
+      clearTimeout(connectionTimeout);
       if (id !== peerId) {
         this.roomId = id;
       }
@@ -336,11 +346,12 @@ const MarbleNetwork = {
         this.conns = this.conns.filter(c => c !== connection);
         this.activePlayersList = this.activePlayersList.filter(p => p.peerId !== connection.peer);
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
-        this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList });
+        this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
       });
     });
 
     this.peer.on("error", (err) => {
+      clearTimeout(connectionTimeout);
       console.error("PeerJS Host Error:", err);
       if (err.type === "unavailable-id") {
         this.peer.destroy();
@@ -379,7 +390,7 @@ const MarbleNetwork = {
               this.conns = this.conns.filter(conn => conn !== c);
               this.activePlayersList = this.activePlayersList.filter(p => p.peerId !== c.peer);
               MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
-              this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList });
+              this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
             });
           });
         } catch (e2) {
@@ -542,7 +553,7 @@ const MarbleNetwork = {
           });
           
           MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
-          this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList });
+          this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
         } else {
           senderConn.send({ type: "ROOM_FULL_ERR" });
         }
@@ -700,6 +711,9 @@ const MarbleNetwork = {
       }
       else if (data.type === "SYNC_PLAYERS") {
         this.activePlayersList = data.list;
+        if (data.slots) {
+          this.slotsList = data.slots;
+        }
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
       }
       else if (data.type === "START_GAME") {
@@ -1088,16 +1102,17 @@ const MarbleGameModule = {
       if (MarbleNetwork.peer && !MarbleNetwork.isHost && MarbleNetwork.slotsList && MarbleNetwork.slotsList[i]) {
         slotNames.push(MarbleNetwork.slotsList[i]);
       } else {
-        const inp = document.getElementById(`marble-player-name-${i}`);
-        if (inp) {
-          slotNames.push(inp.value.trim());
+        // Host or local
+        if (i === 0) {
+          const hostP = list.find(x => x.teamIdx === 0);
+          slotNames.push(hostP ? hostP.name : (this.isSpectatorMode ? "교사 (관전)" : "참가자 1"));
         } else {
-          const p = list.find(x => x.teamIdx === i);
-          if (i === 0 && this.isSpectatorMode) {
-            slotNames.push("교사 (관전)");
+          const p = list.find(x => x.teamIdx === i && !x.isHost);
+          if (this.isSoloMode) {
+            slotNames.push(p ? p.name : `참가자 ${this.isSpectatorMode ? i : i + 1}`);
           } else {
-            const guestIdx = this.isSpectatorMode ? i : i + 1;
-            slotNames.push(p ? p.name : (this.isSoloMode ? `참가자 ${guestIdx}` : defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)]));
+            const inp = document.getElementById(`marble-player-name-${i}`);
+            slotNames.push(inp ? inp.value.trim() : defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)]);
           }
         }
       }
