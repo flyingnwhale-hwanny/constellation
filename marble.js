@@ -639,6 +639,7 @@ const MarbleNetwork = {
         document.getElementById("dice-container-2").style.display = (MarbleGameModule.diceCount === 1) ? "none" : "inline-block";
         
         AppController.switchView("view-marble");
+        MarbleGameModule.hasRolled = false;
         MarbleGameModule.closeOverlays();
         MarbleGameModule.updateStatsUI();
         MarbleGameModule.updateTokensUI();
@@ -654,6 +655,9 @@ const MarbleNetwork = {
         }, 2000);
       }
       else if (data.type === "SYNC_STATE") {
+        if (MarbleGameModule.activePlayerIdx !== data.activePlayerIdx) {
+          MarbleGameModule.hasRolled = false;
+        }
         MarbleGameModule.players = data.players;
         MarbleGameModule.tileOwners = data.tileOwners;
         MarbleGameModule.activePlayerIdx = data.activePlayerIdx;
@@ -755,6 +759,7 @@ const MarbleGameModule = {
   isSoloMode: true,
   isWarpState: false,
   isRolling: false,
+  hasRolled: false,
   tileOwners: {},
   playerColors: ["#ff5252", "#3b82f6", "#10b981", "#eab308", "#d946ef"],
   playerTokens: ["🚀", "🛸", "☄️", "🛰️", "🌠"],
@@ -1062,15 +1067,17 @@ const MarbleGameModule = {
   },
 
   handleRollClick() {
-    if (this.isRolling || this.isWarpState) return;
+    if (this.isRolling || this.isWarpState || this.hasRolled) return;
     if (!this.canLocalPlayerControl()) {
       alert("지금은 본인 또는 본인 팀(모둠)의 조작 차례가 아닙니다.");
       return;
     }
 
     if (MarbleNetwork.peer && !MarbleNetwork.isHost) {
+      this.hasRolled = true; // Lock locally immediately to prevent guest spam clicks
       MarbleNetwork.send({ type: "ROLL_DICE_REQ" });
     } else {
+      this.hasRolled = true; // Lock host roll
       this.rollDice();
     }
   },
@@ -1293,8 +1300,9 @@ const MarbleGameModule = {
   },
 
   rollDice() {
-    if (this.isRolling || this.isWarpState) return;
+    if (this.isRolling || this.isWarpState || this.hasRolled) return;
 
+    this.hasRolled = true;
     const activePlayer = this.players[this.activePlayerIdx];
     if (activePlayer.bankrupt) {
       this.endTurn();
@@ -1929,6 +1937,7 @@ const MarbleGameModule = {
   },
 
   endTurn() {
+    this.hasRolled = false;
     this.closeOverlays();
     this.syncStateWithClients();
 
