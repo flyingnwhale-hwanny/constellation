@@ -398,6 +398,27 @@ const SoundEffects = {
     setTimeout(() => this.play(900, 'sine', 0.15, 0.1), 60);
   },
 
+  playDiceRoll() {
+    this.init();
+    if (!this.ctx) return;
+    
+    // Play a sequence of short low-pitched noise-like bumps
+    const startTime = this.ctx.currentTime;
+    let delay = 0;
+    
+    for (let i = 0; i < 8; i++) {
+      const pitch = 200 + Math.random() * 150 - (i * 15);
+      const dur = 0.05 + Math.random() * 0.05;
+      const vol = 0.15 - (i * 0.015);
+      
+      setTimeout(() => {
+        this.play(pitch, 'triangle', dur, vol);
+      }, delay);
+      
+      delay += 80 + (i * 45); // Gradually slow down the clicks
+    }
+  },
+
   playSuccess() {
     // Upward clean arpeggio
     const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6

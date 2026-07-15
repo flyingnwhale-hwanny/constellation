@@ -788,6 +788,7 @@ const MarbleNetwork = {
       else if (data.type === "DICE_ANIMATE") {
         MarbleGameModule.hasRolled = true;
         MarbleGameModule.isRolling = true;
+        SoundEffects.playDiceRoll();
         MarbleGameModule.animate3DDice(data.r1, data.r2);
         
         setTimeout(() => {
@@ -924,6 +925,8 @@ const MarbleGameModule = {
   quizTimerInterval: null,
   quizTimeLimit: 15,
   quizTimeRemaining: 0,
+  cube1Rot: { x: 0, y: 0 },
+  cube2Rot: { x: 0, y: 0 },
 
   init() {
     document.querySelectorAll(".board-tile.prop").forEach(tile => {
@@ -1529,7 +1532,7 @@ const MarbleGameModule = {
     }
 
     this.isRolling = true;
-    SoundEffects.playBubble();
+    SoundEffects.playDiceRoll();
 
     const r1 = Math.floor(Math.random() * 6) + 1;
     const r2 = this.diceCount === 2 ? (Math.floor(Math.random() * 6) + 1) : 0;
@@ -1553,13 +1556,13 @@ const MarbleGameModule = {
     const c1 = document.getElementById("cube-element-1");
     const c2 = document.getElementById("cube-element-2");
     
-    this.rotateCubeToValue(c1, v1);
+    this.rotateCubeToValue(c1, v1, 1);
     if (this.diceCount === 2 && v2 > 0) {
-      this.rotateCubeToValue(c2, v2);
+      this.rotateCubeToValue(c2, v2, 2);
     }
   },
 
-  rotateCubeToValue(cube, val) {
+  rotateCubeToValue(cube, val, cubeIdx) {
     if (!cube) return;
     let rx = 0;
     let ry = 0;
@@ -1572,10 +1575,12 @@ const MarbleGameModule = {
       case 6: rx = 0; ry = 180; break;
     }
     const spins = 6;
-    const finalX = rx + (360 * spins);
-    const finalY = ry + (360 * spins);
+    const rot = (cubeIdx === 1) ? this.cube1Rot : this.cube2Rot;
     
-    cube.style.transform = `rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+    rot.x += rx + (360 * spins);
+    rot.y += ry + (360 * spins);
+    
+    cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
   },
 
   moveActivePlayer(steps) {
