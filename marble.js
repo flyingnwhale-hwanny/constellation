@@ -290,7 +290,8 @@ const MarbleNetwork = {
           isSoloMode: MarbleGameModule.isSoloMode,
           slots: MarbleGameModule.getCurrentSlotNames(),
           list: this.activePlayersList,
-          diceCount: MarbleGameModule.diceCount
+          diceCount: MarbleGameModule.diceCount,
+          playerCount: MarbleGameModule.getPlayerCountConfig()
         });
       });
 
@@ -333,7 +334,8 @@ const MarbleNetwork = {
               isSoloMode: MarbleGameModule.isSoloMode,
               slots: MarbleGameModule.getCurrentSlotNames(),
               list: this.activePlayersList,
-              diceCount: MarbleGameModule.diceCount
+              diceCount: MarbleGameModule.diceCount,
+              playerCount: MarbleGameModule.getPlayerCountConfig()
             }));
             c.on("data", (d) => this.handleData(d, c));
             c.on("close", () => {
@@ -543,6 +545,23 @@ const MarbleNetwork = {
         const activeDiceBtn = document.getElementById(`btn-dice-count-${MarbleGameModule.diceCount}`);
         if (activeDiceBtn) activeDiceBtn.classList.add("active");
         
+        // Update player count selector in setup for visual sync on client
+        if (data.playerCount) {
+          document.querySelectorAll(".btn-setup-opt[id^='btn-players-']").forEach(b => b.classList.remove("active"));
+          const activeCountBtn = document.getElementById(`btn-players-${data.playerCount}`);
+          if (activeCountBtn) activeCountBtn.classList.add("active");
+        }
+
+        // Sync game mode locally on guest
+        MarbleGameModule.isSoloMode = data.isSoloMode;
+        if (data.isSoloMode) {
+          document.getElementById("btn-mode-solo").classList.add("active");
+          document.getElementById("btn-mode-team").classList.remove("active");
+        } else {
+          document.getElementById("btn-mode-team").classList.add("active");
+          document.getElementById("btn-mode-solo").classList.remove("active");
+        }
+
         // Populate selection dropdown inside join modal
         const select = document.getElementById("online-join-slot");
         if (select) {
@@ -561,7 +580,6 @@ const MarbleNetwork = {
           label.textContent = data.isSoloMode ? "참가 슬롯:" : "참가 모둠:";
         }
         
-        MarbleGameModule.isSoloMode = data.isSoloMode;
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
 
         // Show guest join input form and hide loading banner
@@ -735,6 +753,7 @@ const MarbleGameModule = {
         document.querySelectorAll(".btn-setup-opt[id^='btn-players-']").forEach(b => b.classList.remove("active"));
         document.getElementById(`btn-players-${num}`).classList.add("active");
         this.setupPlayersInputs(num);
+        this.syncSetupToClients();
       });
     });
 
@@ -747,6 +766,7 @@ const MarbleGameModule = {
       const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
       const count = parseInt(countBtn.id.replace("btn-players-", ""));
       this.setupPlayersInputs(count);
+      this.syncSetupToClients();
     });
 
     document.getElementById("btn-mode-team").addEventListener("click", () => {
@@ -758,6 +778,7 @@ const MarbleGameModule = {
       const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
       const count = parseInt(countBtn.id.replace("btn-players-", ""));
       this.setupPlayersInputs(count);
+      this.syncSetupToClients();
     });
 
     [1, 2].forEach(num => {
@@ -769,16 +790,7 @@ const MarbleGameModule = {
             document.querySelectorAll(".btn-setup-opt[id^='btn-dice-count-']").forEach(b => b.classList.remove("active"));
             document.getElementById(`btn-dice-count-${num}`).classList.add("active");
             this.diceCount = num;
-            
-            if (MarbleNetwork.isHost) {
-              MarbleNetwork.broadcast({
-                type: "CONNECT_ACK",
-                isSoloMode: this.isSoloMode,
-                slots: this.getCurrentSlotNames(),
-                list: MarbleNetwork.activePlayersList,
-                diceCount: this.diceCount
-              });
-            }
+            this.syncSetupToClients();
           } catch (err) {
             console.error("Dice select error:", err);
           }
@@ -873,6 +885,24 @@ const MarbleGameModule = {
       names.push(inp ? inp.value.trim() : (this.isSoloMode ? `참가자 ${i + 1}` : defaultTeamNames[i]));
     }
     return names;
+  },
+
+  getPlayerCountConfig() {
+    const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
+    return countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
+  },
+
+  syncSetupToClients() {
+    if (MarbleNetwork.isHost) {
+      MarbleNetwork.broadcast({
+        type: "CONNECT_ACK",
+        isSoloMode: this.isSoloMode,
+        slots: this.getCurrentSlotNames(),
+        list: MarbleNetwork.activePlayersList,
+        diceCount: this.diceCount,
+        playerCount: this.getPlayerCountConfig()
+      });
+    }
   },
 
   setupPlayersInputs(count) {
