@@ -204,6 +204,9 @@ const MarbleNetwork = {
       document.getElementById("btn-conn-online").classList.remove("active");
       document.getElementById("setup-online-actions").style.display = "none";
       document.getElementById("online-status-banner").style.display = "none";
+      document.getElementById("row-spectator-mode").style.display = "none";
+      
+      document.getElementById("btn-spec-off").click();
     });
 
     document.getElementById("btn-conn-online").addEventListener("click", () => {
@@ -211,6 +214,29 @@ const MarbleNetwork = {
       document.getElementById("btn-conn-local").classList.remove("active");
       document.getElementById("setup-online-actions").style.display = "flex";
       document.getElementById("online-status-banner").style.display = "block";
+      document.getElementById("row-spectator-mode").style.display = "flex";
+    });
+
+    document.getElementById("btn-spec-off").addEventListener("click", () => {
+      if (MarbleNetwork.peer && !MarbleNetwork.isHost) return;
+      document.getElementById("btn-spec-off").classList.add("active");
+      document.getElementById("btn-spec-on").classList.remove("active");
+      this.isSpectatorMode = false;
+      
+      const count = this.getPlayerCountConfig();
+      this.setupPlayersInputs(count);
+      this.syncSetupToClients();
+    });
+
+    document.getElementById("btn-spec-on").addEventListener("click", () => {
+      if (MarbleNetwork.peer && !MarbleNetwork.isHost) return;
+      document.getElementById("btn-spec-on").classList.add("active");
+      document.getElementById("btn-spec-off").classList.remove("active");
+      this.isSpectatorMode = true;
+      
+      const count = this.getPlayerCountConfig();
+      this.setupPlayersInputs(count);
+      this.syncSetupToClients();
     });
 
     document.getElementById("btn-create-room").addEventListener("click", () => {
@@ -292,6 +318,7 @@ const MarbleNetwork = {
         connection.send({
           type: "CONNECT_ACK",
           isSoloMode: MarbleGameModule.isSoloMode,
+          isSpectatorMode: MarbleGameModule.isSpectatorMode,
           slots: MarbleGameModule.getCurrentSlotNames(),
           list: this.activePlayersList,
           diceCount: MarbleGameModule.diceCount,
@@ -338,6 +365,7 @@ const MarbleNetwork = {
             c.on("open", () => c.send({
               type: "CONNECT_ACK",
               isSoloMode: MarbleGameModule.isSoloMode,
+              isSpectatorMode: MarbleGameModule.isSpectatorMode,
               slots: MarbleGameModule.getCurrentSlotNames(),
               list: this.activePlayersList,
               diceCount: MarbleGameModule.diceCount,
@@ -461,19 +489,23 @@ const MarbleNetwork = {
         const slots = MarbleGameModule.getCurrentSlotNames();
         const nickname = data.nickname.trim();
 
+        const startSlot = MarbleGameModule.isSpectatorMode ? 1 : 0;
+        const endSlot = MarbleGameModule.isSpectatorMode ? count + 1 : count;
+
         // 1. Try to find a slot that matches the nickname exactly (e.g. "1조" or "홍팀")
         let targetSlotIdx = -1;
-        for (let i = 0; i < count; i++) {
+        for (let i = startSlot; i < endSlot; i++) {
           if (slots[i] && slots[i].trim() === nickname) {
             targetSlotIdx = i;
             break;
           }
         }
 
-        // 2. If no exact match, fall back to the first unoccupied slot sequentially (from 1 to count-1)
+        // 2. If no exact match, fall back to the first unoccupied slot sequentially (skipping Slot 0 if spectator)
         if (targetSlotIdx === -1) {
           const occupiedIndices = new Set(this.activePlayersList.map(p => p.teamIdx));
-          for (let i = 1; i < count; i++) {
+          for (let i = startSlot; i < endSlot; i++) {
+            if (i === 0 && MarbleGameModule.isSpectatorMode) continue;
             if (!occupiedIndices.has(i)) {
               targetSlotIdx = i;
               break;
@@ -586,7 +618,19 @@ const MarbleNetwork = {
       if (data.type === "CONNECT_ACK") {
         this.activePlayersList = data.list;
         this.slotsList = data.slots;
+        MarbleGameModule.isSpectatorMode = data.isSpectatorMode || false;
         
+        // Sync spectator toggles locally on guest
+        if (data.isSpectatorMode) {
+          document.getElementById("btn-spec-on").classList.add("active");
+          document.getElementById("btn-spec-off").classList.remove("active");
+          document.getElementById("row-spectator-mode").style.display = "flex";
+        } else {
+          document.getElementById("btn-spec-off").classList.add("active");
+          document.getElementById("btn-spec-on").classList.remove("active");
+          document.getElementById("row-spectator-mode").style.display = "flex";
+        }
+
         // Update dice count selector in setup for visual sync on client
         MarbleGameModule.diceCount = data.diceCount || 2;
         document.querySelectorAll(".btn-setup-opt[id^='btn-dice-count-']").forEach(b => b.classList.remove("active"));
@@ -643,6 +687,7 @@ const MarbleNetwork = {
       else if (data.type === "START_GAME") {
         MarbleGameModule.maxTurnsLimit = data.maxTurnsLimit;
         MarbleGameModule.isSoloMode = data.isSoloMode;
+        MarbleGameModule.isSpectatorMode = data.isSpectatorMode || false;
         MarbleGameModule.players = data.players;
         MarbleGameModule.diceCount = data.diceCount || 2;
         MarbleGameModule.quizTimeLimit = data.quizTimeLimit || 15;
@@ -773,6 +818,7 @@ const MarbleGameModule = {
   isWarpState: false,
   isRolling: false,
   hasRolled: false,
+  isSpectatorMode: false,
   tileOwners: {},
   playerColors: ["#ff5252", "#3b82f6", "#10b981", "#eab308", "#d946ef", "#00d2d3"],
   playerTokens: ["🚀", "🛸", "☄️", "🛰️", "🌠", "🌌"],
@@ -980,10 +1026,15 @@ const MarbleGameModule = {
 
     if (MarbleNetwork.isHost) {
       // Re-initialize active connection structures on host
-      const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (this.isSoloMode ? "참가자 1" : defaultTeamNames[0]);
+      const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (this.isSpectatorMode ? "교사 (관전)" : (this.isSoloMode ? "참가자 1" : defaultTeamNames[0]));
       MarbleNetwork.activePlayersList = [{ id: 0, name: hostName, isHost: true, peerId: "constellation-room-" + MarbleNetwork.roomId, teamIdx: 0 }];
-      for (let i = 1; i < count; i++) {
-        MarbleNetwork.activePlayersList.push({ id: i, name: this.isSoloMode ? `대기 중...` : defaultTeamNames[i], peerId: "", isHost: false, teamIdx: i });
+      
+      const startSlot = 1;
+      const endSlot = this.isSpectatorMode ? count + 1 : count;
+      
+      for (let i = startSlot; i < endSlot; i++) {
+        const defaultName = this.isSoloMode ? `참가자 ${i}` : defaultTeamNames[i - 1];
+        MarbleNetwork.activePlayersList.push({ id: i, name: defaultName, peerId: "", isHost: false, teamIdx: i });
       }
       this.setupPlayersInputsFromList(MarbleNetwork.activePlayersList);
       return;
@@ -1012,8 +1063,10 @@ const MarbleGameModule = {
     const count = countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
     const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
 
+    const totalSlots = this.isSpectatorMode ? count + 1 : count;
+
     const slotNames = [];
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < totalSlots; i++) {
       if (MarbleNetwork.peer && !MarbleNetwork.isHost && MarbleNetwork.slotsList && MarbleNetwork.slotsList[i]) {
         slotNames.push(MarbleNetwork.slotsList[i]);
       } else {
@@ -1022,27 +1075,40 @@ const MarbleGameModule = {
           slotNames.push(inp.value.trim());
         } else {
           const p = list.find(x => x.teamIdx === i);
-          slotNames.push(p ? p.name : (this.isSoloMode ? `참가자 ${i + 1}` : defaultTeamNames[i]));
+          if (i === 0 && this.isSpectatorMode) {
+            slotNames.push("교사 (관전)");
+          } else {
+            const guestIdx = this.isSpectatorMode ? i : i + 1;
+            slotNames.push(p ? p.name : (this.isSoloMode ? `참가자 ${guestIdx}` : defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)]));
+          }
         }
       }
     }
 
     slotNames.forEach((sName, sIdx) => {
-      if (sIdx >= count) return;
+      if (sIdx >= totalSlots) return;
       
       const div = document.createElement("div");
       div.className = "player-input-group";
-      div.style.setProperty("--player-color", this.playerColors[sIdx]);
+      
+      const colorVal = (sIdx === 0 && this.isSpectatorMode) ? "#9e9e9e" : this.playerColors[sIdx - (this.isSpectatorMode ? 1 : 0)];
+      div.style.setProperty("--player-color", colorVal);
       
       // Find who is mapped to this slot
       const members = list.filter(p => p.teamIdx === sIdx).map(p => p.name + (p.isHost ? " (방장)" : ""));
       const membersStr = members.length > 0 ? members.join(", ") : "대기 중...";
       
-      const label = this.isSoloMode ? `P${sIdx + 1} 이름` : `${defaultTeamNames[sIdx]}`;
-      const inputReadonly = (MarbleNetwork.peer && !MarbleNetwork.isHost) ? "disabled" : "";
+      let label = "";
+      if (sIdx === 0 && this.isSpectatorMode) {
+        label = "방장 (교사)";
+      } else {
+        const guestIdx = this.isSpectatorMode ? sIdx : sIdx + 1;
+        label = this.isSoloMode ? `P${guestIdx} 이름` : `${defaultTeamNames[sIdx - (this.isSpectatorMode ? 1 : 0)]} 이름`;
+      }
+      const inputReadonly = (sIdx === 0 && this.isSpectatorMode) ? "disabled" : ((MarbleNetwork.peer && !MarbleNetwork.isHost) ? "disabled" : "");
 
       div.innerHTML = `
-        <label style="color: ${this.playerColors[sIdx]}">${label}:</label>
+        <label style="color: ${colorVal}">${label}:</label>
         <input type="text" id="marble-player-name-${sIdx}" value="${sName}" ${inputReadonly} style="max-width: 120px; margin-right: 10px;" maxlength="8">
         <span style="font-size: 12.5px; opacity:0.8;">(${membersStr})</span>
       `;
@@ -1057,13 +1123,7 @@ const MarbleGameModule = {
           if (playerObj) {
             playerObj.name = inp.value.trim();
           }
-          
-          MarbleNetwork.broadcast({
-            type: "CONNECT_ACK",
-            isSoloMode: this.isSoloMode,
-            slots: this.getCurrentSlotNames(),
-            list: MarbleNetwork.activePlayersList
-          });
+          this.syncSetupToClients();
         });
       }
     });
@@ -1076,7 +1136,7 @@ const MarbleGameModule = {
     if (!localPlayer) return false;
     
     const activePlayer = this.players[this.activePlayerIdx];
-    return activePlayer.id === localPlayer.teamIdx;
+    return activePlayer.teamIdx === localPlayer.teamIdx;
   },
 
   handleRollClick() {
@@ -1128,14 +1188,19 @@ const MarbleGameModule = {
     this.players = [];
     const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
 
-    for (let i = 0; i < count; i++) {
+    const startSlot = this.isSpectatorMode ? 1 : 0;
+    const endSlot = this.isSpectatorMode ? count + 1 : count;
+
+    for (let i = startSlot; i < endSlot; i++) {
       const nameInput = document.getElementById(`marble-player-name-${i}`);
-      const name = (nameInput ? nameInput.value.trim() : "") || (this.isSoloMode ? `참가자 ${i + 1}` : defaultTeamNames[i]);
+      const fallbackName = this.isSoloMode ? `참가자 ${this.isSpectatorMode ? i : i + 1}` : defaultTeamNames[i - startSlot];
+      const name = (nameInput ? nameInput.value.trim() : "") || fallbackName;
       this.players.push({
-        id: i,
+        id: i - startSlot,
+        teamIdx: i,
         name: name,
-        color: this.playerColors[i],
-        token: this.playerTokens[i],
+        color: this.playerColors[i - startSlot],
+        token: this.playerTokens[i - startSlot],
         dust: 500,
         position: 0,
         bankrupt: false,
@@ -1151,8 +1216,10 @@ const MarbleGameModule = {
     if (MarbleNetwork.peer) {
       MarbleNetwork.activePlayersList.forEach(ap => {
         const teamIdx = ap.teamIdx !== undefined ? ap.teamIdx : ap.id;
-        if (this.players[teamIdx]) {
-          this.players[teamIdx].members.push(ap.name);
+        if (this.isSpectatorMode && teamIdx === 0) return;
+        const mappedPlayer = this.players.find(p => p.teamIdx === teamIdx);
+        if (mappedPlayer) {
+          mappedPlayer.members.push(ap.name);
         }
       });
     }
@@ -1187,6 +1254,7 @@ const MarbleGameModule = {
         type: "START_GAME",
         maxTurnsLimit: this.maxTurnsLimit,
         isSoloMode: this.isSoloMode,
+        isSpectatorMode: this.isSpectatorMode,
         players: this.players,
         diceCount: this.diceCount,
         quizTimeLimit: this.quizTimeLimit
