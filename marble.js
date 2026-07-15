@@ -563,6 +563,11 @@ const MarbleNetwork = {
 
         // 2. If no exact match, fall back to the first unoccupied slot sequentially (skipping Slot 0 if spectator)
         if (targetSlotIdx === -1) {
+          if (!MarbleGameModule.isSoloMode) {
+            senderConn.send({ type: "TEAM_NAME_ERR", msg: "모둠이름이 틀렸습니다." });
+            return;
+          }
+          
           const occupiedIndices = new Set(this.activePlayersList.map(p => p.teamIdx));
           for (let i = startSlot; i < endSlot; i++) {
             if (i === 0 && MarbleGameModule.isSpectatorMode) continue;
@@ -930,6 +935,9 @@ const MarbleNetwork = {
       }
       else if (data.type === "BLACKHOLE_ERR") {
         MarbleGameModule.showCustomAlert("탈출 실패", data.msg);
+      }
+      else if (data.type === "TEAM_NAME_ERR") {
+        MarbleGameModule.showCustomAlert("입력 오류", data.msg);
       }
     }
   }
