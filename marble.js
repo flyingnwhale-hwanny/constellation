@@ -176,15 +176,13 @@ const MarbleNetwork = {
       document.getElementById("modal-online-join").style.display = "flex";
       
       document.getElementById("btn-submit-join").addEventListener("click", () => {
-        const nickname = document.getElementById("online-join-nickname").value.trim() || "새 탐험가";
+        const nickname = document.getElementById("online-join-nickname").value.trim();
+        if (!nickname) {
+          MarbleGameModule.showCustomAlert("입력 오류", "이름을 입력해주세요.");
+          return;
+        }
         const selectedIdx = document.getElementById("online-join-slot").selectedIndex;
         this.send({ type: "JOIN_SUBMIT", nickname: nickname, teamIdx: selectedIdx });
-        
-        document.getElementById("modal-online-join").style.display = "none";
-        AppController.switchView("view-marble-setup");
-        document.getElementById("btn-conn-online").click();
-        document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 우주 연결 완료 (ID: ${this.roomId})`;
-        document.getElementById("btn-create-room").style.display = "none";
       });
       document.getElementById("btn-cancel-join").addEventListener("click", () => {
         document.getElementById("modal-online-join").style.display = "none";
@@ -588,6 +586,8 @@ const MarbleNetwork = {
             teamIdx: targetSlotIdx
           });
           
+          senderConn.send({ type: "JOIN_SUCCESS" });
+          
           MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
           this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
         } else {
@@ -938,6 +938,16 @@ const MarbleNetwork = {
       }
       else if (data.type === "TEAM_NAME_ERR") {
         MarbleGameModule.showCustomAlert("입력 오류", data.msg);
+      }
+      else if (data.type === "JOIN_SUCCESS") {
+        document.getElementById("modal-online-join").style.display = "none";
+        AppController.switchView("view-marble-setup");
+        document.getElementById("btn-conn-online").click();
+        document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 우주 연결 완료 (ID: ${this.roomId})`;
+        document.getElementById("btn-create-room").style.display = "none";
+      }
+      else if (data.type === "ROOM_FULL_ERR") {
+        MarbleGameModule.showCustomAlert("접속 불가", "더 이상 참가할 수 있는 빈 자리가 없습니다.");
       }
     }
   }
