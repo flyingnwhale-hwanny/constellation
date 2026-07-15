@@ -250,14 +250,18 @@ const MarbleNetwork = {
     // Explicit primary secure PeerJS cloud configuration
     try {
       this.peer = new Peer(peerId, {
-        key: "peerjs",
+        host: "0.peerjs.com",
+        port: 443,
+        secure: true,
         debug: 3
       });
     } catch (e) {
       console.error("PeerJS custom ID initialization failed, falling back...", e);
       try {
         this.peer = new Peer({
-          key: "peerjs",
+          host: "0.peerjs.com",
+          port: 443,
+          secure: true,
           debug: 3
         });
       } catch (err) {
@@ -313,7 +317,9 @@ const MarbleNetwork = {
         this.peer.destroy();
         try {
           this.peer = new Peer({
-            key: "peerjs",
+            host: "0.peerjs.com",
+            port: 443,
+            secure: true,
             debug: 3
           });
           this.peer.on("open", (id) => {
@@ -367,7 +373,9 @@ const MarbleNetwork = {
     
     try {
       this.peer = new Peer({
-        key: "peerjs",
+        host: "0.peerjs.com",
+        port: 443,
+        secure: true,
         debug: 3
       });
     } catch (e) {
@@ -396,7 +404,35 @@ const MarbleNetwork = {
 
     this.peer.on("error", (err) => {
       console.error("PeerJS Join error:", err);
-      alert("연결 오류: " + err.type);
+      
+      let errorMsg = "네트워크 접속 오류가 발생했습니다.";
+      switch (err.type) {
+        case "peer-unavailable":
+          errorMsg = "존재하지 않는 방 코드입니다. 코드가 정확한지 확인해 주세요.";
+          break;
+        case "network":
+          errorMsg = "네트워크 서버 연결에 실패했습니다. 인터넷 회선 상태를 확인해 주세요.";
+          break;
+        case "disconnected":
+          errorMsg = "연결이 끊어졌습니다. 다시 시도해 주세요.";
+          break;
+        case "browser-incompatible":
+          errorMsg = "이 브라우저는 멀티플레이 접속을 지원하지 않습니다. 크롬이나 사파리를 사용해 주세요.";
+          break;
+        case "invalid-id":
+          errorMsg = "방 코드 형식이 올바르지 않습니다.";
+          break;
+        case "server-error":
+          errorMsg = "접속 서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+          break;
+        case "socket-error":
+          errorMsg = "네트워크 소켓 연결 오류가 발생했습니다.";
+          break;
+        default:
+          errorMsg = `연결 오류가 발생했습니다. (${err.type})`;
+      }
+      
+      alert(errorMsg);
       document.getElementById("modal-online-join").style.display = "none";
     });
   },
@@ -869,7 +905,20 @@ const MarbleGameModule = {
   },
 
   onActivateSetup() {
-    this.setupPlayersInputs(2);
+    if (MarbleNetwork.peer && !MarbleNetwork.isHost) {
+      // Guest: Sync setup parameters from Host instead of defaulting to 2 players
+      const count = (MarbleNetwork.slotsList && MarbleNetwork.slotsList.length) ? MarbleNetwork.slotsList.length : 2;
+      document.querySelectorAll(".btn-setup-opt[id^='btn-players-']").forEach(b => b.classList.remove("active"));
+      const activeCountBtn = document.getElementById(`btn-players-${count}`);
+      if (activeCountBtn) activeCountBtn.classList.add("active");
+      
+      this.setupPlayersInputsFromList(MarbleNetwork.activePlayersList);
+    } else {
+      // Local or Host: use the active DOM selection (defaults to 2)
+      const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
+      const count = countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
+      this.setupPlayersInputs(count);
+    }
     document.body.className = "theme-spring";
     MascotController.setBubbleTextOnly("별자리 부루마블 준비실이야! 온라인 모둠전 모드에서는 기기 접속 제한 없이 모둠 이름을 설정해 자유롭게 조작을 나눌 수 있어!");
   },
