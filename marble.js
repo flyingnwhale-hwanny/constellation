@@ -1225,14 +1225,22 @@ const MarbleGameModule = {
   },
 
   setupPlayersInputsFromList(list) {
-    const container = document.getElementById("marble-players-inputs");
-    container.innerHTML = "";
-
     const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
     const count = countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
     const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
-
     const totalSlots = this.isSpectatorMode ? count + 1 : count;
+
+    // Retrieve custom slot values from DOM before clearing container innerHTML
+    const existingInps = {};
+    for (let i = 0; i < totalSlots; i++) {
+      const el = document.getElementById(`marble-player-name-${i}`);
+      if (el) {
+        existingInps[i] = el.value.trim();
+      }
+    }
+
+    const container = document.getElementById("marble-players-inputs");
+    container.innerHTML = "";
 
     const slotNames = [];
     for (let i = 0; i < totalSlots; i++) {
@@ -1248,8 +1256,8 @@ const MarbleGameModule = {
           if (this.isSoloMode) {
             slotNames.push(p ? p.name : `참가자 ${this.isSpectatorMode ? i : i + 1}`);
           } else {
-            const inp = document.getElementById(`marble-player-name-${i}`);
-            slotNames.push(inp ? inp.value.trim() : defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)]);
+            const existingVal = existingInps[i];
+            slotNames.push(existingVal || defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)]);
           }
         }
       }
