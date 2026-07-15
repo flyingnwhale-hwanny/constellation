@@ -785,6 +785,9 @@ const MarbleNetwork = {
           }
         }
         
+        if (data.slots) {
+          this.slotsList = data.slots;
+        }
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
 
         // Show guest join input form and hide loading banner
