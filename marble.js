@@ -757,6 +757,28 @@ const MarbleNetwork = {
         if (label) {
           label.textContent = data.isSoloMode ? "참가 슬롯:" : "참가 모둠:";
         }
+
+        // Dynamically alter labels and show team options list in Team Match mode
+        const nameLabel = document.querySelector("#join-form-wrapper .setup-row label");
+        if (nameLabel) {
+          nameLabel.textContent = data.isSoloMode ? "내 이름:" : "모둠 이름:";
+        }
+        const nameInput = document.getElementById("online-join-nickname");
+        if (nameInput) {
+          nameInput.placeholder = data.isSoloMode ? "이름 입력" : "예: 1조, 2조";
+          nameInput.value = data.isSoloMode ? "새 탐험가" : "1조";
+        }
+        const hintEl = document.getElementById("join-teams-hint");
+        if (hintEl) {
+          if (!data.isSoloMode && data.slots) {
+            // Exclude Teacher slot from selectable team lists
+            const activeSlots = data.slots.filter(s => s !== "교사 (관전)");
+            hintEl.textContent = `참가 가능한 모둠: ${activeSlots.join(", ")}`;
+            hintEl.style.display = "block";
+          } else {
+            hintEl.style.display = "none";
+          }
+        }
         
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
 
@@ -1109,10 +1131,20 @@ const MarbleGameModule = {
     const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
     const count = countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
     const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
+    const totalSlots = this.isSpectatorMode ? count + 1 : count;
     
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < totalSlots; i++) {
       const inp = document.getElementById(`marble-player-name-${i}`);
-      names.push(inp ? inp.value.trim() : (this.isSoloMode ? `참가자 ${i + 1}` : defaultTeamNames[i]));
+      if (inp) {
+        names.push(inp.value.trim());
+      } else {
+        if (i === 0 && this.isSpectatorMode) {
+          names.push("교사 (관전)");
+        } else {
+          const idx = this.isSpectatorMode ? i - 1 : i;
+          names.push(this.isSoloMode ? `참가자 ${i + 1}` : defaultTeamNames[idx]);
+        }
+      }
     }
     return names;
   },
@@ -1150,7 +1182,7 @@ const MarbleGameModule = {
       const endSlot = this.isSpectatorMode ? count + 1 : count;
       
       for (let i = startSlot; i < endSlot; i++) {
-        const defaultName = this.isSoloMode ? `참가자 ${i}` : defaultTeamNames[i - 1];
+        const defaultName = this.isSoloMode ? `참가자 ${i}` : defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)];
         MarbleNetwork.activePlayersList.push({ id: i, name: defaultName, peerId: "", isHost: false, teamIdx: i });
       }
       this.setupPlayersInputsFromList(MarbleNetwork.activePlayersList);
