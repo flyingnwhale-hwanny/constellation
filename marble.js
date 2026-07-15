@@ -1201,7 +1201,6 @@ const MarbleGameModule = {
       this.hasRolled = true; // Lock locally immediately to prevent guest spam clicks
       MarbleNetwork.send({ type: "ROLL_DICE_REQ" });
     } else {
-      this.hasRolled = true; // Lock host roll
       this.rollDice();
     }
   },
