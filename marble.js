@@ -458,14 +458,26 @@ const MarbleNetwork = {
       if (data.type === "JOIN_SUBMIT") {
         const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
         const count = countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
+        const slots = MarbleGameModule.getCurrentSlotNames();
+        const nickname = data.nickname.trim();
 
-        // Find the first unoccupied slot index (1 to count-1)
-        const occupiedIndices = new Set(this.activePlayersList.map(p => p.teamIdx));
+        // 1. Try to find a slot that matches the nickname exactly (e.g. "1조" or "홍팀")
         let targetSlotIdx = -1;
-        for (let i = 1; i < count; i++) {
-          if (!occupiedIndices.has(i)) {
+        for (let i = 0; i < count; i++) {
+          if (slots[i] && slots[i].trim() === nickname) {
             targetSlotIdx = i;
             break;
+          }
+        }
+
+        // 2. If no exact match, fall back to the first unoccupied slot sequentially (from 1 to count-1)
+        if (targetSlotIdx === -1) {
+          const occupiedIndices = new Set(this.activePlayersList.map(p => p.teamIdx));
+          for (let i = 1; i < count; i++) {
+            if (!occupiedIndices.has(i)) {
+              targetSlotIdx = i;
+              break;
+            }
           }
         }
 
@@ -473,7 +485,7 @@ const MarbleNetwork = {
           const newPlayerIdx = this.activePlayersList.length;
           this.activePlayersList.push({
             id: newPlayerIdx,
-            name: data.nickname,
+            name: nickname,
             peerId: senderConn.peer,
             isHost: false,
             teamIdx: targetSlotIdx
@@ -646,6 +658,7 @@ const MarbleNetwork = {
         MarbleGameModule.updateActiveTurnUI();
       }
       else if (data.type === "DICE_ANIMATE") {
+        MarbleGameModule.hasRolled = true;
         MarbleGameModule.isRolling = true;
         MarbleGameModule.animate3DDice(data.r1, data.r2);
         
@@ -761,8 +774,8 @@ const MarbleGameModule = {
   isRolling: false,
   hasRolled: false,
   tileOwners: {},
-  playerColors: ["#ff5252", "#3b82f6", "#10b981", "#eab308", "#d946ef"],
-  playerTokens: ["🚀", "🛸", "☄️", "🛰️", "🌠"],
+  playerColors: ["#ff5252", "#3b82f6", "#10b981", "#eab308", "#d946ef", "#00d2d3"],
+  playerTokens: ["🚀", "🛸", "☄️", "🛰️", "🌠", "🌌"],
   activeTileIdx: 0,
   diceCount: 2,
   pendingAction: null,
@@ -787,7 +800,7 @@ const MarbleGameModule = {
       }
     });
 
-    [2, 3, 4, 5].forEach(num => {
+    [2, 3, 4, 5, 6].forEach(num => {
       document.getElementById(`btn-players-${num}`).addEventListener("click", () => {
         if (MarbleNetwork.peer && !MarbleNetwork.isHost) return;
         
@@ -932,7 +945,7 @@ const MarbleGameModule = {
     const names = [];
     const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
     const count = countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
-    const defaultTeamNames = ["홍팀", "청팀", "녹팀", "황팀", "자팀"];
+    const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
     
     for (let i = 0; i < count; i++) {
       const inp = document.getElementById(`marble-player-name-${i}`);
@@ -963,7 +976,7 @@ const MarbleGameModule = {
     const container = document.getElementById("marble-players-inputs");
     container.innerHTML = "";
     
-    const defaultTeamNames = ["홍팀", "청팀", "녹팀", "황팀", "자팀"];
+    const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
 
     if (MarbleNetwork.isHost) {
       // Re-initialize active connection structures on host
@@ -997,7 +1010,7 @@ const MarbleGameModule = {
 
     const countBtn = document.querySelector(".btn-setup-opt[id^='btn-players-'].active");
     const count = countBtn ? parseInt(countBtn.id.replace("btn-players-", "")) : 2;
-    const defaultTeamNames = ["홍팀", "청팀", "녹팀", "황팀", "자팀"];
+    const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
 
     const slotNames = [];
     for (let i = 0; i < count; i++) {
@@ -1113,7 +1126,7 @@ const MarbleGameModule = {
     this.quizTimeLimit = quizTimeSelect ? parseInt(quizTimeSelect.value) : 15;
 
     this.players = [];
-    const defaultTeamNames = ["홍팀", "청팀", "녹팀", "황팀", "자팀"];
+    const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
 
     for (let i = 0; i < count; i++) {
       const nameInput = document.getElementById(`marble-player-name-${i}`);
