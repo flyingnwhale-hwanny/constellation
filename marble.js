@@ -221,22 +221,22 @@ const MarbleNetwork = {
       if (MarbleNetwork.peer && !MarbleNetwork.isHost) return;
       document.getElementById("btn-spec-off").classList.add("active");
       document.getElementById("btn-spec-on").classList.remove("active");
-      this.isSpectatorMode = false;
+      MarbleGameModule.isSpectatorMode = false;
       
-      const count = this.getPlayerCountConfig();
-      this.setupPlayersInputs(count);
-      this.syncSetupToClients();
+      const count = MarbleGameModule.getPlayerCountConfig();
+      MarbleGameModule.setupPlayersInputs(count);
+      MarbleGameModule.syncSetupToClients();
     });
 
     document.getElementById("btn-spec-on").addEventListener("click", () => {
       if (MarbleNetwork.peer && !MarbleNetwork.isHost) return;
       document.getElementById("btn-spec-on").classList.add("active");
       document.getElementById("btn-spec-off").classList.remove("active");
-      this.isSpectatorMode = true;
+      MarbleGameModule.isSpectatorMode = true;
       
-      const count = this.getPlayerCountConfig();
-      this.setupPlayersInputs(count);
-      this.syncSetupToClients();
+      const count = MarbleGameModule.getPlayerCountConfig();
+      MarbleGameModule.setupPlayersInputs(count);
+      MarbleGameModule.syncSetupToClients();
     });
 
     document.getElementById("btn-create-room").addEventListener("click", () => {
@@ -307,7 +307,7 @@ const MarbleNetwork = {
       document.getElementById("btn-show-qr").style.display = "inline-block";
       document.getElementById("btn-create-room").style.display = "none";
       
-      const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSoloMode ? "참가자 1" : "홍팀");
+      const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSpectatorMode ? "교사 (관전)" : (MarbleGameModule.isSoloMode ? "참가자 1" : "1조"));
       this.activePlayersList = [{ id: 0, name: hostName, isHost: true, peerId: id, teamIdx: 0 }];
       MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
     });
@@ -358,7 +358,7 @@ const MarbleNetwork = {
             document.getElementById("btn-copy-link").style.display = "inline-block";
             document.getElementById("btn-show-qr").style.display = "inline-block";
             document.getElementById("btn-create-room").style.display = "none";
-            const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSoloMode ? "참가자 1" : "홍팀");
+            const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSpectatorMode ? "교사 (관전)" : (MarbleGameModule.isSoloMode ? "참가자 1" : "1조"));
             this.activePlayersList = [{ id: 0, name: hostName, isHost: true, peerId: id, teamIdx: 0 }];
             MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
           });
