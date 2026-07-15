@@ -279,6 +279,7 @@ const MarbleNetwork = {
         host: "0.peerjs.com",
         port: 443,
         secure: true,
+        key: "peerjs",
         debug: 3
       });
     } catch (e) {
@@ -288,6 +289,7 @@ const MarbleNetwork = {
           host: "0.peerjs.com",
           port: 443,
           secure: true,
+          key: "peerjs",
           debug: 3
         });
       } catch (err) {
@@ -347,6 +349,7 @@ const MarbleNetwork = {
             host: "0.peerjs.com",
             port: 443,
             secure: true,
+            key: "peerjs",
             debug: 3
           });
           this.peer.on("open", (id) => {
@@ -383,7 +386,21 @@ const MarbleNetwork = {
           document.getElementById("online-status-text").textContent = "방 생성 실패: " + e2.message;
         }
       } else {
-        document.getElementById("online-status-text").textContent = "방 생성 오류: " + err.type;
+        let errorMsg = "네트워크 접속 오류가 발생했습니다.";
+        switch (err.type) {
+          case "network":
+            errorMsg = "네트워크 연결에 실패했습니다. 인터넷 상태를 확인해 주세요.";
+            break;
+          case "disconnected":
+            errorMsg = "서버와의 연결이 끊어졌습니다.";
+            break;
+          case "peer-unavailable":
+            errorMsg = "존재하지 않는 방 코드입니다.";
+            break;
+          default:
+            errorMsg = `방 생성 실패: ${err.type}`;
+        }
+        document.getElementById("online-status-text").textContent = errorMsg;
       }
     });
   },
@@ -404,6 +421,7 @@ const MarbleNetwork = {
         host: "0.peerjs.com",
         port: 443,
         secure: true,
+        key: "peerjs",
         debug: 3
       });
     } catch (e) {
