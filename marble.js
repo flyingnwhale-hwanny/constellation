@@ -586,7 +586,7 @@ const MarbleNetwork = {
             teamIdx: targetSlotIdx
           });
           
-          senderConn.send({ type: "JOIN_SUCCESS" });
+          senderConn.send({ type: "JOIN_SUCCESS", playerIdx: targetSlotIdx });
           
           MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
           this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
@@ -689,10 +689,12 @@ const MarbleNetwork = {
               MarbleGameModule.updateStatsUI();
               MarbleGameModule.syncStateWithClients();
               MarbleGameModule.isRolling = false;
+              MarbleGameModule.hasRolled = false;
               MarbleGameModule.rollDice();
             } else {
               senderConn.send({ type: "BLACKHOLE_ERR", msg: "별가루가 부족해 벌금을 낼 수 없습니다. 한 턴 쉬어갑니다." });
               activePlayer.trappedTurns = 0;
+              MarbleGameModule.hasRolled = false; // reset on fail too so turn finishes cleanly
               MarbleGameModule.log(`${activePlayer.name}이(가) 별가루 부족으로 블랙홀을 탈출하지 못하고 한 턴 쉬어갑니다.`);
               MarbleGameModule.endTurn();
             }
@@ -943,6 +945,7 @@ const MarbleNetwork = {
         MarbleGameModule.showCustomAlert("입력 오류", data.msg);
       }
       else if (data.type === "JOIN_SUCCESS") {
+        MarbleGameModule.myTeamIdx = data.playerIdx;
         document.getElementById("modal-online-join").style.display = "none";
         AppController.switchView("view-marble-setup");
         document.getElementById("btn-conn-online").click();
@@ -1403,6 +1406,15 @@ const MarbleGameModule = {
         }
       });
     }
+    
+    // Set myTeamIdx for Host / Local
+    if (MarbleNetwork.peer) {
+      if (MarbleNetwork.isHost) {
+        this.myTeamIdx = this.isSpectatorMode ? undefined : 0;
+      }
+    } else {
+      this.myTeamIdx = undefined;
+    }
 
     this.activePlayerIdx = 0;
     this.currentTurnCount = 1;
@@ -1466,7 +1478,9 @@ const MarbleGameModule = {
 
     this.players.forEach(p => {
       const card = document.createElement("div");
-      card.className = `marble-player-card ${p.id === this.activePlayerIdx ? 'active' : ''} ${p.bankrupt ? 'bankrupt' : ''}`;
+      
+      const isMyTeam = (this.myTeamIdx !== undefined && p.teamIdx === this.myTeamIdx);
+      card.className = `marble-player-card ${p.id === this.activePlayerIdx ? 'active' : ''} ${p.bankrupt ? 'bankrupt' : ''} ${isMyTeam ? 'my-team-card' : ''}`;
       card.style.setProperty("--player-color", p.color);
       card.style.setProperty("--player-color-glow", p.color + "44");
 
@@ -1480,11 +1494,13 @@ const MarbleGameModule = {
         ticketsHtml += `</div>`;
       }
 
+      const myTeamBadge = isMyTeam ? `<span class="my-team-badge" style="background: #4caf50; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 6px; text-transform: uppercase; animation: pulseGlow 1.5s infinite alternate; box-shadow: 0 0 6px #4caf50;">내 모둠</span>` : "";
+
       card.innerHTML = `
         <div class="player-card-left">
           <span class="player-card-token">${p.token}</span>
           <div class="player-card-info">
-            <h4>${p.name}</h4>
+            <h4 style="display: flex; align-items: center; flex-wrap: wrap;">${p.name}${myTeamBadge}</h4>
             <span>위치: ${MARBLE_BOARD_TILES[p.position].name}</span>
             ${membersText}
           </div>
@@ -1595,11 +1611,13 @@ const MarbleGameModule = {
             this.updateStatsUI();
             this.syncStateWithClients();
             this.isRolling = false;
+            this.hasRolled = false;
             this.rollDice();
           } else {
             this.showCustomAlert("탈출 실패", "별가루가 부족해 벌금을 낼 수 없습니다. 한 턴 쉬어갑니다.", () => {
               activePlayer.trappedTurns = 0;
               this.log(`${activePlayer.name}이(가) 별가루 부족으로 블랙홀을 탈출하지 못하고 한 턴 쉬어갑니다.`);
+              this.hasRolled = false;
               this.endTurn();
             });
           }

@@ -2038,6 +2038,16 @@ body {
   text-decoration: line-through;
 }
 
+.marble-player-card.my-team-card {
+  border: 1.5px solid #4caf50 !important;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.4) !important;
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 4px rgba(76, 175, 80, 0.4); opacity: 0.8; }
+  100% { box-shadow: 0 0 12px rgba(76, 175, 80, 0.8); opacity: 1; }
+}
+
 .player-card-left {
   display: flex;
   align-items: center;
