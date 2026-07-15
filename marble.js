@@ -206,6 +206,13 @@ const MarbleNetwork = {
       document.getElementById("online-status-banner").style.display = "none";
       document.getElementById("row-spectator-mode").style.display = "none";
       
+      if (this.peer) {
+        this.peer.destroy();
+        this.peer = null;
+      }
+      this.conns = [];
+      this.activePlayersList = [];
+      
       document.getElementById("btn-spec-off").click();
     });
 
