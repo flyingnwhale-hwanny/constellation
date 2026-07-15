@@ -581,8 +581,8 @@ const MarbleNetwork = {
         const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
         
         if (senderPlayer) {
-          const isOwnTurn = activePlayer.id === senderPlayer.teamIdx;
-          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.id === senderPlayer.teamIdx;
+          const isOwnTurn = activePlayer.teamIdx === senderPlayer.teamIdx;
+          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.teamIdx === senderPlayer.teamIdx;
           
           if (isOwnTurn || isTeamTurn) {
             MarbleGameModule.rollDice();
@@ -594,8 +594,8 @@ const MarbleNetwork = {
         const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
         
         if (senderPlayer) {
-          const isOwnTurn = activePlayer.id === senderPlayer.teamIdx;
-          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.id === senderPlayer.teamIdx;
+          const isOwnTurn = activePlayer.teamIdx === senderPlayer.teamIdx;
+          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.teamIdx === senderPlayer.teamIdx;
           
           if (isOwnTurn || isTeamTurn) {
             if (data.choice === "buy") {
@@ -614,8 +614,8 @@ const MarbleNetwork = {
         const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
         
         if (senderPlayer) {
-          const isOwnTurn = activePlayer.id === senderPlayer.teamIdx;
-          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.id === senderPlayer.teamIdx;
+          const isOwnTurn = activePlayer.teamIdx === senderPlayer.teamIdx;
+          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.teamIdx === senderPlayer.teamIdx;
           
           if (isOwnTurn || isTeamTurn) {
             MarbleGameModule.submitQuizAnswer(data.selectedIdx, data.correctIdx);
@@ -626,7 +626,7 @@ const MarbleNetwork = {
         const activePlayer = MarbleGameModule.players[MarbleGameModule.activePlayerIdx];
         const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
         
-        if (senderPlayer && activePlayer.id === senderPlayer.teamIdx) {
+        if (senderPlayer && activePlayer.teamIdx === senderPlayer.teamIdx) {
           if (MarbleGameModule.pendingAction) {
             const action = MarbleGameModule.pendingAction;
             MarbleGameModule.pendingAction = null;
@@ -638,7 +638,7 @@ const MarbleNetwork = {
         const activePlayer = MarbleGameModule.players[MarbleGameModule.activePlayerIdx];
         const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
         
-        if (senderPlayer && activePlayer.id === senderPlayer.teamIdx) {
+        if (senderPlayer && activePlayer.teamIdx === senderPlayer.teamIdx) {
           if (MarbleGameModule.pendingAction) {
             const action = MarbleGameModule.pendingAction;
             MarbleGameModule.pendingAction = null;
@@ -651,8 +651,8 @@ const MarbleNetwork = {
         const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
         
         if (senderPlayer) {
-          const isOwnTurn = activePlayer.id === senderPlayer.teamIdx;
-          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.id === senderPlayer.teamIdx;
+          const isOwnTurn = activePlayer.teamIdx === senderPlayer.teamIdx;
+          const isTeamTurn = !MarbleGameModule.isSoloMode && activePlayer.teamIdx === senderPlayer.teamIdx;
           
           if (isOwnTurn || isTeamTurn) {
             MarbleGameModule.warpToTile(data.targetIdx);
