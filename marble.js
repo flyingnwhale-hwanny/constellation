@@ -825,7 +825,9 @@ const MarbleNetwork = {
         }, 2000);
       }
       else if (data.type === "SYNC_STATE") {
-        if (MarbleGameModule.activePlayerIdx !== data.activePlayerIdx) {
+        if (data.hasRolled !== undefined) {
+          MarbleGameModule.hasRolled = data.hasRolled;
+        } else if (MarbleGameModule.activePlayerIdx !== data.activePlayerIdx) {
           MarbleGameModule.hasRolled = false;
         }
         MarbleGameModule.players = data.players;
@@ -1190,7 +1192,7 @@ const MarbleGameModule = {
     }
 
     for (let i = 0; i < count; i++) {
-      const label = this.isSoloMode ? `P${i + 1} 이름` : `${defaultTeamNames[i]} 이름`;
+      const label = this.isSoloMode ? `P${i + 1} 이름` : `${defaultTeamNames[i]} 모둠이름`;
       const defaultValue = this.isSoloMode ? `참가자 ${i + 1}` : defaultTeamNames[i];
       
       const div = document.createElement("div");
@@ -1253,7 +1255,7 @@ const MarbleGameModule = {
         label = "방장 (교사)";
       } else {
         const guestIdx = this.isSpectatorMode ? sIdx : sIdx + 1;
-        label = this.isSoloMode ? `P${guestIdx} 이름` : `${defaultTeamNames[sIdx - (this.isSpectatorMode ? 1 : 0)]} 이름`;
+        label = this.isSoloMode ? `P${guestIdx} 이름` : `${defaultTeamNames[sIdx - (this.isSpectatorMode ? 1 : 0)]} 모둠이름`;
       }
       const inputReadonly = (sIdx === 0 && this.isSpectatorMode) ? "disabled" : ((MarbleNetwork.peer && !MarbleNetwork.isHost) ? "disabled" : "");
 
@@ -1423,7 +1425,8 @@ const MarbleGameModule = {
         maxTurnsLimit: this.maxTurnsLimit,
         isSoloMode: this.isSoloMode,
         diceCount: this.diceCount,
-        quizTimeLimit: this.quizTimeLimit
+        quizTimeLimit: this.quizTimeLimit,
+        hasRolled: this.hasRolled
       });
     }
   },
@@ -1789,6 +1792,7 @@ const MarbleGameModule = {
     else if (tile.type === "meteor") {
       this.log(`${activePlayer.name}이(가) 유성우 급행을 탔습니다! 보너스 찬스로 한 번 더 굴리세요!`, "highlight-event");
       MascotController.setBubbleTextOnly("☄️ 엄청난 속도의 유성우 가속을 받았어! 주사위를 한 번 더 던져보자!");
+      this.hasRolled = false;
       this.syncStateWithClients();
     } 
     else if (tile.type === "chance") {
