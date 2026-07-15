@@ -1571,7 +1571,7 @@ const MarbleGameModule = {
       case 5: rx = -90; ry = 0; break;
       case 6: rx = 0; ry = 180; break;
     }
-    const spins = 3;
+    const spins = 6;
     const finalX = rx + (360 * spins);
     const finalY = ry + (360 * spins);
     
