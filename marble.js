@@ -480,6 +480,12 @@ const MarbleNetwork = {
 
       this.conn.on("close", () => {
         alert("방장과 연결이 끊어져 홈 화면으로 이동합니다.");
+        if (this.peer) {
+          this.peer.destroy();
+          this.peer = null;
+        }
+        this.conns = [];
+        this.activePlayersList = [];
         AppController.switchView("view-lobby");
       });
     });
@@ -1032,6 +1038,18 @@ const MarbleGameModule = {
     document.getElementById("btn-marble-restart-end").addEventListener("click", () => {
       document.getElementById("marble-result-overlay").style.display = "none";
       AppController.switchView("view-marble-setup");
+    });
+
+    document.getElementById("btn-marble-lobby").addEventListener("click", () => {
+      document.getElementById("marble-result-overlay").style.display = "none";
+      if (MarbleNetwork.peer) {
+        MarbleNetwork.peer.destroy();
+        MarbleNetwork.peer = null;
+        MarbleNetwork.conn = null;
+        MarbleNetwork.conns = [];
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      AppController.switchView("view-lobby");
     });
 
     document.getElementById("btn-info-proceed").addEventListener("click", () => {
@@ -2229,6 +2247,8 @@ const MarbleGameModule = {
       standingsBox.appendChild(row);
     });
 
+    const isGuest = MarbleNetwork.peer && !MarbleNetwork.isHost;
+    document.getElementById("btn-marble-restart-end").style.display = isGuest ? "none" : "inline-block";
     document.getElementById("marble-result-overlay").style.display = "flex";
   },
 

@@ -591,7 +591,16 @@ const AppController = {
     document.getElementById("btn-connect-back").addEventListener("click", () => this.switchView("view-lobby"));
     document.getElementById("btn-sorter-back").addEventListener("click", () => this.switchView("view-lobby"));
     document.getElementById("btn-search-back").addEventListener("click", () => this.switchView("view-lobby"));
-    document.getElementById("btn-marble-setup-back").addEventListener("click", () => this.switchView("view-lobby"));
+    document.getElementById("btn-marble-setup-back").addEventListener("click", () => {
+      if (typeof MarbleNetwork !== "undefined" && MarbleNetwork.peer) {
+        MarbleNetwork.peer.destroy();
+        MarbleNetwork.peer = null;
+        MarbleNetwork.conn = null;
+        MarbleNetwork.conns = [];
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      this.switchView("view-lobby");
+    });
     document.getElementById("btn-marble-game-back").addEventListener("click", () => {
       if (confirm("현재 별자리 부루마블 게임을 종료하고 로비로 돌아가시겠습니까?")) {
         MarbleGameModule.endGame(true);
