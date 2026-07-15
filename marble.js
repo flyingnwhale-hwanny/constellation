@@ -264,6 +264,23 @@ const MarbleNetwork = {
     document.getElementById("btn-close-qr-modal").addEventListener("click", () => {
       document.getElementById("modal-qr-invite").style.display = "none";
     });
+
+    document.getElementById("btn-regen-room").addEventListener("click", () => {
+      if (this.peer) {
+        if (this.conns.length > 0) {
+          if (!confirm("방 코드를 재생성하면 현재 접속 중인 참가자들이 모두 튕겨 나갑니다. 정말 새로 만드시겠습니까?")) {
+            return;
+          }
+        }
+        this.peer.destroy();
+        this.peer = null;
+      }
+      this.conns = [];
+      document.getElementById("btn-copy-link").style.display = "none";
+      document.getElementById("btn-show-qr").style.display = "none";
+      document.getElementById("btn-regen-room").style.display = "none";
+      this.createRoom();
+    });
   },
 
   createRoom() {
@@ -315,6 +332,7 @@ const MarbleNetwork = {
       document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 온라인 대기 중 (방 코드: <strong>${this.roomId}</strong>)`;
       document.getElementById("btn-copy-link").style.display = "inline-block";
       document.getElementById("btn-show-qr").style.display = "inline-block";
+      document.getElementById("btn-regen-room").style.display = "inline-block";
       document.getElementById("btn-create-room").style.display = "none";
       
       const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSpectatorMode ? "교사 (관전)" : (MarbleGameModule.isSoloMode ? "참가자 1" : "1조"));
