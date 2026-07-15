@@ -666,6 +666,32 @@ const MarbleNetwork = {
           }
         }
       }
+      else if (data.type === "BLACKHOLE_DECISION_RESP") {
+        const activePlayer = MarbleGameModule.players[MarbleGameModule.activePlayerIdx];
+        const senderPlayer = this.activePlayersList.find(p => p.peerId === senderConn.peer);
+        if (senderPlayer && activePlayer.teamIdx === senderPlayer.teamIdx) {
+          if (data.escape) {
+            if (activePlayer.dust >= 50) {
+              activePlayer.dust -= 50;
+              activePlayer.trappedTurns = 0;
+              MarbleGameModule.log(`${activePlayer.name}이(가) 벌금 50 별가루를 내고 블랙홀을 탈출했습니다.`, "highlight-event");
+              MarbleGameModule.updateStatsUI();
+              MarbleGameModule.syncStateWithClients();
+              MarbleGameModule.isRolling = false;
+              MarbleGameModule.rollDice();
+            } else {
+              senderConn.send({ type: "BLACKHOLE_ERR", msg: "별가루가 부족해 벌금을 낼 수 없습니다. 한 턴 쉬어갑니다." });
+              activePlayer.trappedTurns = 0;
+              MarbleGameModule.log(`${activePlayer.name}이(가) 별가루 부족으로 블랙홀을 탈출하지 못하고 한 턴 쉬어갑니다.`);
+              MarbleGameModule.endTurn();
+            }
+          } else {
+            activePlayer.trappedTurns = 0;
+            MarbleGameModule.log(`${activePlayer.name}이(가) 블랙홀 대기를 선택하여 이번 턴을 쉬어갑니다.`);
+            MarbleGameModule.endTurn();
+          }
+        }
+      }
     } 
     else {
       // Client operations
@@ -860,6 +886,19 @@ const MarbleNetwork = {
       else if (data.type === "ERROR") {
         alert(data.message);
         AppController.switchView("view-lobby");
+      }
+      else if (data.type === "BLACKHOLE_CHOICE_REQ") {
+        MarbleGameModule.showCustomConfirm("블랙홀 탈출", "현재 블랙홀에 갇혀있습니다. 50 별가루를 벌금으로 내고 즉시 탈출할까요? 취소를 누르면 이번 턴을 한 번 쉬어갑니다.",
+          () => {
+            MarbleNetwork.send({ type: "BLACKHOLE_DECISION_RESP", escape: true });
+          },
+          () => {
+            MarbleNetwork.send({ type: "BLACKHOLE_DECISION_RESP", escape: false });
+          }
+        );
+      }
+      else if (data.type === "BLACKHOLE_ERR") {
+        MarbleGameModule.showCustomAlert("탈출 실패", data.msg);
       }
     }
   }
@@ -1448,26 +1487,45 @@ const MarbleGameModule = {
     }
 
     if (activePlayer.trappedTurns > 0) {
-      if (confirm(`${activePlayer.name}은(는) 현재 블랙홀에 갇혀있습니다. 50 별가루를 벌금으로 내고 즉시 탈출할까요? 취소를 누르면 턴을 한 번 건너뜁니다.`)) {
-        if (activePlayer.dust >= 50) {
-          activePlayer.dust -= 50;
-          activePlayer.trappedTurns = 0;
-          this.log(`${activePlayer.name}이(가) 벌금 50 별가루를 내고 블랙홀을 탈출했습니다.`, "highlight-event");
-          this.updateStatsUI();
-          this.syncStateWithClients();
-        } else {
-          alert("별가루가 부족해 벌금을 낼 수 없습니다. 한 턴 쉬어갑니다.");
-          activePlayer.trappedTurns = 0;
-          this.log(`${activePlayer.name}이(가) 별가루 부족으로 블랙홀을 탈출하지 못하고 한 턴 쉬어갑니다.`);
-          this.endTurn();
-          return;
+      if (MarbleNetwork.peer) {
+        if (MarbleNetwork.isHost) {
+          const targetConn = MarbleNetwork.conns.find(c => {
+            const p = MarbleNetwork.activePlayersList.find(ap => ap.peerId === c.peer);
+            return p && p.teamIdx === activePlayer.teamIdx;
+          });
+          if (targetConn) {
+            targetConn.send({ type: "BLACKHOLE_CHOICE_REQ" });
+            this.log(`${activePlayer.name}의 블랙홀 탈출 선택을 대기 중입니다...`);
+            return;
+          }
         }
-      } else {
-        activePlayer.trappedTurns = 0;
-        this.log(`${activePlayer.name}이(가) 블랙홀 대기를 선택하여 이번 턴을 쉬어갑니다.`);
-        this.endTurn();
-        return;
       }
+      
+      this.showCustomConfirm("블랙홀 탈출", `${activePlayer.name}은(는) 현재 블랙홀에 갇혀있습니다. 50 별가루를 벌금으로 내고 즉시 탈출할까요? 취소를 누르면 턴을 한 번 건너뜁니다.`,
+        () => {
+          if (activePlayer.dust >= 50) {
+            activePlayer.dust -= 50;
+            activePlayer.trappedTurns = 0;
+            this.log(`${activePlayer.name}이(가) 벌금 50 별가루를 내고 블랙홀을 탈출했습니다.`, "highlight-event");
+            this.updateStatsUI();
+            this.syncStateWithClients();
+            this.isRolling = false;
+            this.rollDice();
+          } else {
+            this.showCustomAlert("탈출 실패", "별가루가 부족해 벌금을 낼 수 없습니다. 한 턴 쉬어갑니다.", () => {
+              activePlayer.trappedTurns = 0;
+              this.log(`${activePlayer.name}이(가) 별가루 부족으로 블랙홀을 탈출하지 못하고 한 턴 쉬어갑니다.`);
+              this.endTurn();
+            });
+          }
+        },
+        () => {
+          activePlayer.trappedTurns = 0;
+          this.log(`${activePlayer.name}이(가) 블랙홀 대기를 선택하여 이번 턴을 쉬어갑니다.`);
+          this.endTurn();
+        }
+      );
+      return;
     }
 
     this.isRolling = true;
@@ -1946,7 +2004,7 @@ const MarbleGameModule = {
       this.syncStateWithClients();
       this.endTurn();
     } else {
-      alert("소지한 별가루가 모자랍니다. 퀴즈에 맞추어 무료 획득을 노려보세요!");
+      this.showCustomAlert("별가루 부족", "소지한 별가루가 모자랍니다. 퀴즈에 맞추어 무료 획득을 노려보세요!");
     }
   },
 
@@ -1965,7 +2023,7 @@ const MarbleGameModule = {
     const quiz = MARBLE_QUIZZES[tile.id];
 
     if (!quiz) {
-      alert("이 별자리 칸에는 수호자 퀴즈가 준비되지 않았습니다.");
+      this.showCustomAlert("퀴즈 없음", "이 별자리 칸에는 수호자 퀴즈가 준비되지 않았습니다.");
       return;
     }
 
@@ -2052,7 +2110,7 @@ const MarbleGameModule = {
     const tile = MARBLE_BOARD_TILES[targetIdx];
 
     if (tile.type !== "constellation") {
-      alert("워프 도약은 계절별 성운(별자리) 칸으로만 가능합니다.");
+      this.showCustomAlert("워프 오류", "워프 도약은 계절별 성운(별자리) 칸으로만 가능합니다.");
       return;
     }
 
@@ -2228,5 +2286,55 @@ const MarbleGameModule = {
         ctx.fill();
       }
     });
+  },
+
+  showCustomAlert(title, desc, onConfirm) {
+    const modal = document.getElementById("modal-game-choice");
+    document.getElementById("game-choice-title").textContent = title;
+    document.getElementById("game-choice-desc").textContent = desc;
+    
+    const btnConfirm = document.getElementById("btn-choice-confirm");
+    const btnCancel = document.getElementById("btn-choice-cancel");
+    
+    btnCancel.style.display = "none";
+    
+    const newConfirm = btnConfirm.cloneNode(true);
+    btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
+    
+    newConfirm.addEventListener("click", () => {
+      modal.style.display = "none";
+      if (onConfirm) onConfirm();
+    });
+    
+    modal.style.display = "flex";
+  },
+
+  showCustomConfirm(title, desc, onConfirm, onCancel) {
+    const modal = document.getElementById("modal-game-choice");
+    document.getElementById("game-choice-title").textContent = title;
+    document.getElementById("game-choice-desc").textContent = desc;
+    
+    const btnConfirm = document.getElementById("btn-choice-confirm");
+    const btnCancel = document.getElementById("btn-choice-cancel");
+    
+    btnCancel.style.display = "inline-block";
+    
+    const newConfirm = btnConfirm.cloneNode(true);
+    btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
+    
+    const newCancel = btnCancel.cloneNode(true);
+    btnCancel.parentNode.replaceChild(newCancel, btnCancel);
+    
+    newConfirm.addEventListener("click", () => {
+      modal.style.display = "none";
+      if (onConfirm) onConfirm();
+    });
+    
+    newCancel.addEventListener("click", () => {
+      modal.style.display = "none";
+      if (onCancel) onCancel();
+    });
+    
+    modal.style.display = "flex";
   }
 };

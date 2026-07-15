@@ -881,7 +881,15 @@
         우주선 초대 링크 주소
       </div>
       
-      <button class="btn-primary" id="btn-close-qr-modal" style="width: 100%;">우주로 돌아가기</button>
+  <!-- POPUP 5: GAME CUSTOM CHOICE/CONFIRM MODAL -->
+  <div class="modal-backdrop" id="modal-game-choice" style="display: none; z-index: 3000;">
+    <div class="modal-content" style="max-width: 380px; text-align: center; border: 2px solid var(--color-primary); box-shadow: 0 0 25px rgba(0, 230, 118, 0.4);">
+      <h3 style="margin-top: 0; color: var(--color-accent);" id="game-choice-title">알림</h3>
+      <p style="font-size: 14.5px; line-height: 1.6; margin: 15px 0; white-space: pre-line;" id="game-choice-desc">내용</p>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+        <button class="btn-primary" id="btn-choice-confirm" style="flex: 1; padding: 10px 0;">확인</button>
+        <button class="btn-secondary" id="btn-choice-cancel" style="flex: 1; padding: 10px 0;">취소</button>
+      </div>
     </div>
   </div>
 
