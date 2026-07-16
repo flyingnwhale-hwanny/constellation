@@ -294,41 +294,46 @@ const MarbleNetwork = {
     const peerId = "constellation-room-" + this.roomId;
     
     document.getElementById("online-status-text").textContent = "접속 서버 연결 중...";
+    this.initHostPeer(peerId, false);
+  },
 
-    // Set 8-second connection timeout warning
+  initHostPeer(peerId, isFallback) {
+    if (this.peer) {
+      try { this.peer.destroy(); } catch(e){}
+    }
+
     const connectionTimeout = setTimeout(() => {
       if (this.peer && !this.peer.open && !this.peer.destroyed) {
         document.getElementById("online-status-text").innerHTML = 
           `접속 시간이 초과되었습니다.<br><span style="font-size: 11.5px; opacity:0.8;">학교 방화벽에서 실시간 서비스(PeerJS)를 차단했을 가능성이 높습니다.</span>`;
       }
     }, 8000);
-    
-    // Explicit primary secure PeerJS cloud configuration
+
     try {
-      this.peer = new Peer(peerId, {
-        host: "0.peerjs.com",
-        port: 443,
-        secure: true,
-        key: "peerjs",
-        debug: 3
-      });
-    } catch (e) {
-      clearTimeout(connectionTimeout);
-      console.error("PeerJS custom ID initialization failed, falling back...", e);
-      try {
-        this.peer = new Peer({
+      if (isFallback) {
+        this.peer = new Peer(peerId, {
+          host: "localhost",
+          port: 9000,
+          path: "/",
+          secure: false,
+          debug: 3
+        });
+      } else {
+        this.peer = new Peer(peerId, {
           host: "0.peerjs.com",
           port: 443,
           secure: true,
           key: "peerjs",
           debug: 3
         });
-      } catch (err) {
-        document.getElementById("online-status-text").textContent = "방 생성 실패: " + err.message;
-        return;
       }
+    } catch (e) {
+      clearTimeout(connectionTimeout);
+      console.error("PeerJS Host Peer initialization failed:", e);
+      document.getElementById("online-status-text").textContent = "방 생성 실패: " + e.message;
+      return;
     }
-    
+
     this.peer.on("open", (id) => {
       clearTimeout(connectionTimeout);
       if (id !== peerId) {
@@ -349,7 +354,6 @@ const MarbleNetwork = {
       this.conns.push(connection);
       
       connection.on("open", () => {
-        // Send slots and settings on connect
         connection.send({
           type: "CONNECT_ACK",
           isSoloMode: MarbleGameModule.isSoloMode,
@@ -369,73 +373,42 @@ const MarbleNetwork = {
         this.conns = this.conns.filter(c => c !== connection);
         this.activePlayersList = this.activePlayersList.filter(p => p.peerId !== connection.peer);
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
-        this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
+        this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames(), isSpectatorMode: MarbleGameModule.isSpectatorMode });
       });
     });
 
     this.peer.on("error", (err) => {
       clearTimeout(connectionTimeout);
       console.error("PeerJS Host Error:", err);
-      if (err.type === "unavailable-id") {
-        this.peer.destroy();
-        try {
-          this.peer = new Peer({
-            host: "0.peerjs.com",
-            port: 443,
-            secure: true,
-            key: "peerjs",
-            debug: 3
-          });
-          this.peer.on("open", (id) => {
-            this.roomId = id;
-            document.getElementById("online-status-text").innerHTML = `<span class="online-indicator-beacon"></span> 온라인 대기 중 (방 코드: <strong>${this.roomId}</strong>)`;
-            document.getElementById("btn-copy-link").style.display = "inline-block";
-            document.getElementById("btn-show-qr").style.display = "inline-block";
-            document.getElementById("btn-create-room").style.display = "none";
-            const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (MarbleGameModule.isSpectatorMode ? "교사 (관전)" : (MarbleGameModule.isSoloMode ? "참가자 1" : "1조"));
-            this.activePlayersList = [{ id: 0, name: hostName, isHost: true, peerId: id, teamIdx: 0 }];
-            MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
-          });
-          // Re-bind connection handler
-          this.peer.on("connection", (c) => {
-            this.conns.push(c);
-            c.on("open", () => c.send({
-              type: "CONNECT_ACK",
-              isSoloMode: MarbleGameModule.isSoloMode,
-              isSpectatorMode: MarbleGameModule.isSpectatorMode,
-              slots: MarbleGameModule.getCurrentSlotNames(),
-              list: this.activePlayersList,
-              diceCount: MarbleGameModule.diceCount,
-              playerCount: MarbleGameModule.getPlayerCountConfig()
-            }));
-            c.on("data", (d) => this.handleData(d, c));
-            c.on("close", () => {
-              this.conns = this.conns.filter(conn => conn !== c);
-              this.activePlayersList = this.activePlayersList.filter(p => p.peerId !== c.peer);
-              MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
-              this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
-            });
-          });
-        } catch (e2) {
-          document.getElementById("online-status-text").textContent = "방 생성 실패: " + e2.message;
-        }
-      } else {
-        let errorMsg = "네트워크 접속 오류가 발생했습니다.";
-        switch (err.type) {
-          case "network":
-            errorMsg = "네트워크 연결에 실패했습니다. 인터넷 상태를 확인해 주세요.";
-            break;
-          case "disconnected":
-            errorMsg = "서버와의 연결이 끊어졌습니다.";
-            break;
-          case "peer-unavailable":
-            errorMsg = "존재하지 않는 방 코드입니다.";
-            break;
-          default:
-            errorMsg = `방 생성 실패: ${err.type}`;
-        }
-        document.getElementById("online-status-text").textContent = errorMsg;
+
+      if (err.type === "network" && !isFallback && this.isLocalHostname()) {
+        console.log("Host network error on local IP, attempting local signaling server fallback...");
+        document.getElementById("online-status-text").textContent = "로컬 서버(포트 9000) 접속 시도 중...";
+        this.initHostPeer(peerId, true);
+        return;
       }
+
+      if (err.type === "unavailable-id" && !isFallback) {
+        console.log("ID unavailable, retrying with random ID...");
+        this.initHostPeer(undefined, false);
+        return;
+      }
+
+      let errorMsg = "네트워크 접속 오류가 발생했습니다.";
+      switch (err.type) {
+        case "network":
+          errorMsg = "네트워크 연결에 실패했습니다. 인터넷 상태를 확인하거나 로컬 서버(npx peerjs --port 9000)가 켜져 있는지 확인해 주세요.";
+          break;
+        case "disconnected":
+          errorMsg = "서버와의 연결이 끊어졌습니다.";
+          break;
+        case "peer-unavailable":
+          errorMsg = "존재하지 않는 방 코드입니다.";
+          break;
+        default:
+          errorMsg = `방 생성 실패: ${err.type}`;
+      }
+      document.getElementById("online-status-text").textContent = errorMsg;
     });
   },
 
@@ -444,32 +417,50 @@ const MarbleNetwork = {
     this.roomId = roomId;
     document.getElementById("online-status-text").textContent = "은하 접속 중...";
     
-    // Show connection loading state in join modal
     const loadingEl = document.getElementById("join-conn-loading");
     const formEl = document.getElementById("join-form-wrapper");
     if (loadingEl) loadingEl.style.display = "block";
     if (formEl) formEl.style.display = "none";
     
+    this.connectPeer(false);
+  },
+
+  connectPeer(isFallback) {
+    if (this.peer) {
+      try { this.peer.destroy(); } catch(e){}
+    }
+
     try {
-      this.peer = new Peer({
-        host: "0.peerjs.com",
-        port: 443,
-        secure: true,
-        key: "peerjs",
-        debug: 3
-      });
+      if (isFallback) {
+        this.peer = new Peer({
+          host: window.location.hostname,
+          port: 9000,
+          path: "/",
+          secure: false,
+          debug: 3
+        });
+      } else {
+        this.peer = new Peer({
+          host: "0.peerjs.com",
+          port: 443,
+          secure: true,
+          key: "peerjs",
+          debug: 3
+        });
+      }
     } catch (e) {
+      console.error("PeerJS Client Peer initialization failed:", e);
       alert("접속 엔진 초기화 실패: " + e.message);
       document.getElementById("modal-online-join").style.display = "none";
       return;
     }
-    
+
     this.peer.on("open", (id) => {
-      const targetId = (roomId.length === 5 && !roomId.includes("-")) ? "constellation-room-" + roomId : roomId;
+      const targetId = (this.roomId.length === 5 && !this.roomId.includes("-")) ? "constellation-room-" + this.roomId : this.roomId;
       this.conn = this.peer.connect(targetId);
       
       this.conn.on("open", () => {
-        // Connected! Wait for CONNECT_ACK from host to show form
+        // Connected
       });
 
       this.conn.on("data", (data) => {
@@ -491,13 +482,20 @@ const MarbleNetwork = {
     this.peer.on("error", (err) => {
       console.error("PeerJS Join error:", err);
       
+      if (err.type === "network" && !isFallback && this.isLocalHostname()) {
+        console.log("Client network error on local IP, attempting local signaling server fallback...");
+        document.getElementById("online-status-text").textContent = "로컬 서버(포트 9000) 접속 시도 중...";
+        this.connectPeer(true);
+        return;
+      }
+
       let errorMsg = "네트워크 접속 오류가 발생했습니다.";
       switch (err.type) {
         case "peer-unavailable":
           errorMsg = "존재하지 않는 방 코드입니다. 코드가 정확한지 확인해 주세요.";
           break;
         case "network":
-          errorMsg = "네트워크 서버 연결에 실패했습니다. 인터넷 회선 상태를 확인해 주세요.";
+          errorMsg = "네트워크 서버 연결에 실패했습니다. 인터넷 회선 상태를 확인해 주세요. 로컬 멀티플레이 시 방장 PC에서 npx peerjs --port 9000을 실행했는지 확인해 주세요.";
           break;
         case "disconnected":
           errorMsg = "연결이 끊어졌습니다. 다시 시도해 주세요.";
@@ -537,6 +535,11 @@ const MarbleNetwork = {
 
   broadcast(packet) {
     this.send(packet);
+  },
+
+  isLocalHostname() {
+    const hn = window.location.hostname;
+    return hn === "localhost" || hn === "127.0.0.1" || hn.startsWith("192.168.") || hn.startsWith("10.") || hn.startsWith("172.");
   },
 
   handleData(data, senderConn) {
@@ -589,7 +592,7 @@ const MarbleNetwork = {
           senderConn.send({ type: "JOIN_SUCCESS", playerIdx: targetSlotIdx });
           
           MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
-          this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames() });
+          this.broadcast({ type: "SYNC_PLAYERS", list: this.activePlayersList, slots: MarbleGameModule.getCurrentSlotNames(), isSpectatorMode: MarbleGameModule.isSpectatorMode });
         } else {
           senderConn.send({ type: "ROOM_FULL_ERR" });
         }
@@ -802,6 +805,9 @@ const MarbleNetwork = {
         this.activePlayersList = data.list;
         if (data.slots) {
           this.slotsList = data.slots;
+        }
+        if (data.isSpectatorMode !== undefined) {
+          MarbleGameModule.isSpectatorMode = data.isSpectatorMode;
         }
         MarbleGameModule.setupPlayersInputsFromList(this.activePlayersList);
       }
@@ -1185,6 +1191,7 @@ const MarbleGameModule = {
       MarbleNetwork.broadcast({
         type: "CONNECT_ACK",
         isSoloMode: this.isSoloMode,
+        isSpectatorMode: this.isSpectatorMode,
         slots: this.getCurrentSlotNames(),
         list: MarbleNetwork.activePlayersList,
         diceCount: this.diceCount,
@@ -1217,7 +1224,7 @@ const MarbleGameModule = {
       const endSlot = this.isSpectatorMode ? count + 1 : count;
       
       for (let i = startSlot; i < endSlot; i++) {
-        const defaultName = this.isSoloMode ? `참가자 ${i}` : defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)];
+        const defaultName = this.isSoloMode ? `참가자 ${this.isSpectatorMode ? i : i + 1}` : defaultTeamNames[i - (this.isSpectatorMode ? 1 : 0)];
         MarbleNetwork.activePlayersList.push({ id: i, name: defaultName, peerId: "", isHost: false, teamIdx: i });
       }
       this.setupPlayersInputsFromList(MarbleNetwork.activePlayersList);
@@ -1288,7 +1295,7 @@ const MarbleGameModule = {
       div.style.setProperty("--player-color", colorVal);
       
       // Find who is mapped to this slot
-      const members = list.filter(p => p.teamIdx === sIdx).map(p => p.name + (p.isHost ? " (방장)" : ""));
+      const members = list.filter(p => p.teamIdx === sIdx && (p.isHost || p.peerId !== "")).map(p => p.name + (p.isHost ? " (방장)" : ""));
       const membersStr = members.length > 0 ? members.join(", ") : "대기 중...";
       
       let label = "";
