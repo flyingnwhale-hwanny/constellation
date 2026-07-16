@@ -2263,9 +2263,10 @@ const MarbleGameModule = {
       nextIdx = (nextIdx + 1) % this.players.length;
     }
 
+    const prevActiveIdx = this.activePlayerIdx;
     this.activePlayerIdx = nextIdx;
 
-    if (nextIdx === 0) {
+    if (nextIdx < prevActiveIdx) {
       this.currentTurnCount++;
       if (this.currentTurnCount > this.maxTurnsLimit) {
         this.endGame();
@@ -2297,20 +2298,7 @@ const MarbleGameModule = {
 
     SoundEffects.playCelebrate();
 
-    let finalStandings = [];
-    if (this.isSoloMode) {
-      finalStandings = [...this.players].sort((a, b) => b.dust - a.dust);
-    } else {
-      const redTeam = this.players.filter(p => p.team === "Red");
-      const blueTeam = this.players.filter(p => p.team === "Blue");
-      const redTotal = redTeam.reduce((sum, p) => sum + p.dust, 0);
-      const blueTotal = blueTeam.reduce((sum, p) => sum + p.dust, 0);
-
-      finalStandings = [
-        { name: "홍팀 (레드스타)", team: "Red", dust: redTotal, icon: "🔴" },
-        { name: "청팀 (블루갤럭시)", team: "Blue", dust: blueTotal, icon: "🔵" }
-      ].sort((a, b) => b.dust - a.dust);
-    }
+    const finalStandings = [...this.players].sort((a, b) => b.dust - a.dust);
 
     GameState.addScore(300);
 
