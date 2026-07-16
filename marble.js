@@ -1200,8 +1200,17 @@ const MarbleGameModule = {
     const defaultTeamNames = ["1조", "2조", "3조", "4조", "5조", "6조"];
 
     if (MarbleNetwork.isHost) {
-      // Re-initialize active connection structures on host
-      const hostName = document.getElementById("marble-player-name-0")?.value.trim() || (this.isSpectatorMode ? "교사 (관전)" : (this.isSoloMode ? "참가자 1" : defaultTeamNames[0]));
+      let hostName = "";
+      const existingHostName = document.getElementById("marble-player-name-0")?.value.trim();
+      if (this.isSpectatorMode) {
+        hostName = "교사 (관전)";
+      } else {
+        if (!existingHostName || existingHostName === "교사 (관전)") {
+          hostName = this.isSoloMode ? "참가자 1" : defaultTeamNames[0];
+        } else {
+          hostName = existingHostName;
+        }
+      }
       MarbleNetwork.activePlayersList = [{ id: 0, name: hostName, isHost: true, peerId: "constellation-room-" + MarbleNetwork.roomId, teamIdx: 0 }];
       
       const startSlot = 1;
